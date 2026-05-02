@@ -11,17 +11,15 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    02ListPagePaginationQuery: typeof import('./components/index-components/02-list-page-pagination-query.vue')['default']
-    03ListPageAddEdit: typeof import('./components/index-components/03-list-page-add-edit.vue')['default']
-    04ListPageDeleteAction: typeof import('./components/index-components/04-list-page-delete-action.vue')['default']
-    05ExpandRowDetail: typeof import('./components/index-components/05-expand-row-detail.vue')['default']
     ExpandRowDetail: typeof import('./components/index-components/expand-row-detail.vue')['default']
+    IconSelect: typeof import('./components/IconSelect/index.vue')['default']
     ListPageAddEdit: typeof import('./components/index-components/list-page-add-edit.vue')['default']
     ListPageDeleteAction: typeof import('./components/index-components/list-page-delete-action.vue')['default']
     ListPagePaginationQuery: typeof import('./components/index-components/list-page-pagination-query.vue')['default']
     README: typeof import('./components/README.md')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SvgIcon: typeof import('./components/SvgIcon/index.vue')['default']
     TheCounter: typeof import('./components/TheCounter.vue')['default']
     TheFooter: typeof import('./components/TheFooter.vue')['default']
     TheInput: typeof import('./components/TheInput.vue')['default']

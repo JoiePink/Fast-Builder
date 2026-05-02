@@ -24,7 +24,8 @@
     "pinia": "catalog:frontend",
     "vue": "catalog:frontend",
     "vue-i18n": "catalog:frontend",
-    "vue-router": "catalog:frontend"
+    "vue-router": "catalog:frontend",
+    "vue-types": "^6.0.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",
@@ -43,6 +44,7 @@
     "https-localhost": "catalog:dev",
     "markdown-it-link-attributes": "catalog:build",
     "rollup": "catalog:build",
+    "sass-embedded": "^1.99.0",
     "shiki": "catalog:build",
     "taze": "catalog:dev",
     "typescript": "catalog:dev",
