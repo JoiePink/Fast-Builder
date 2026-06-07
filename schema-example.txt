@@ -1,0 +1,448 @@
+# 查询门店列表
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.0.1
+info:
+  title: ''
+  description: ''
+  version: 1.0.0
+paths:
+  /api/store/list:
+    get:
+      summary: 查询门店列表
+      deprecated: false
+      description: 查询门店列表
+      operationId: list_191
+      tags:
+        - MR/门店
+        - 门店
+      parameters:
+        - name: createDept
+          in: query
+          description: 创建部门
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int64
+            description: 创建部门
+        - name: createBy
+          in: query
+          description: 创建者
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int64
+            description: 创建者
+        - name: createTime
+          in: query
+          description: 创建时间
+          required: false
+          example: ''
+          schema:
+            type: string
+            format: date-time
+            description: 创建时间
+        - name: updateBy
+          in: query
+          description: 更新者
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int64
+            description: 更新者
+        - name: updateTime
+          in: query
+          description: 更新时间
+          required: false
+          example: ''
+          schema:
+            type: string
+            format: date-time
+            description: 更新时间
+        - name: params
+          in: query
+          description: 请求参数
+          required: false
+          example: ''
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+            description: 请求参数
+            x-apifox-orders: []
+            properties: {}
+            x-apifox-ignore-properties: []
+        - name: appStoreId
+          in: query
+          description: 主键
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int64
+            description: 主键
+        - name: masterId
+          in: query
+          description: 负责人id
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int64
+            description: 负责人id
+        - name: storeName
+          in: query
+          description: 门店名称
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 门店名称
+        - name: image
+          in: query
+          description: 图片
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 图片
+        - name: leader
+          in: query
+          description: 负责人
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 负责人
+        - name: mobile
+          in: query
+          description: 联系电话
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 联系电话
+        - name: area
+          in: query
+          description: 区域
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 区域
+        - name: province
+          in: query
+          description: 省份
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 省份
+        - name: city
+          in: query
+          description: 城市
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 城市
+        - name: district
+          in: query
+          description: 区县
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 区县
+        - name: address
+          in: query
+          description: 详细地址
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 详细地址
+        - name: lng
+          in: query
+          description: 经度
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 经度
+        - name: lat
+          in: query
+          description: 纬度
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 纬度
+        - name: saleNumber
+          in: query
+          description: 销售量
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int32
+            description: 销售量
+        - name: businessStartTime
+          in: query
+          description: 营业时间
+          required: false
+          example: ''
+          schema:
+            type: string
+            format: date-time
+            description: 营业时间
+        - name: businessEndTime
+          in: query
+          description: 关门时间
+          required: false
+          example: ''
+          schema:
+            type: string
+            format: date-time
+            description: 关门时间
+        - name: status
+          in: query
+          description: 状态(0正常, 1禁止)
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 状态(0正常, 1禁止)
+        - name: type
+          in: query
+          description: 类型（1普通门店）
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 类型（1普通门店）
+        - name: sort
+          in: query
+          description: 排序
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int32
+            description: 排序
+        - name: brandOpenStatus
+          in: query
+          description: 品牌是否开启(0是  1否)
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 品牌是否开启(0是  1否)
+        - name: supportsReservations
+          in: query
+          description: ''
+          required: false
+          example: ''
+          schema:
+            type: string
+        - name: staffId
+          in: query
+          description: ''
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int64
+        - name: profit
+          in: query
+          description: ''
+          required: false
+          example: 0
+          schema:
+            type: number
+        - name: agentId
+          in: query
+          description: ''
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int64
+        - name: pageSize
+          in: query
+          description: 分页大小
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int32
+            description: 分页大小
+        - name: pageNum
+          in: query
+          description: 当前页数
+          required: false
+          example: 0
+          schema:
+            type: integer
+            format: int32
+            description: 当前页数
+        - name: orderByColumn
+          in: query
+          description: 排序列
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 排序列
+        - name: isAsc
+          in: query
+          description: 排序的方向desc或者asc
+          required: false
+          example: ''
+          schema:
+            type: string
+            description: 排序的方向desc或者asc
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TableDataInfoAppStoreVo'
+          headers: {}
+          x-apifox-name: 成功
+        '401':
+          description: Unauthorized
+          content:
+            '*/*':
+              schema:
+                type: string
+          headers: {}
+          x-apifox-name: 没有权限
+      security: []
+      x-apifox-folder: MR/门店
+      x-apifox-status: released
+      x-run-in-apifox: https://app.apifox.com/web/project/7559764/apis/api-390965735-run
+components:
+  schemas:
+    TableDataInfoAppStoreVo:
+      type: object
+      description: 表格分页数据对象
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: 总记录数
+        rows:
+          type: array
+          description: 列表数据
+          items:
+            $ref: '#/components/schemas/AppStoreVo'
+        code:
+          type: integer
+          format: int32
+          description: 消息状态码
+        msg:
+          type: string
+          description: 消息内容
+      x-apifox-orders:
+        - total
+        - rows
+        - code
+        - msg
+      x-apifox-ignore-properties: []
+      x-apifox-folder: ''
+    AppStoreVo:
+      type: object
+      description: 门店视图对象 store
+      properties:
+        appStoreId:
+          type: integer
+          format: int64
+          description: 主键
+        storeName:
+          type: string
+          description: 门店名称
+        image:
+          type: string
+          description: 图片
+        imageUrl:
+          type: string
+          description: 图片Url
+        leader:
+          type: string
+          description: 负责人
+        mobile:
+          type: string
+          description: 联系电话
+        area:
+          type: string
+          description: 区域
+        province:
+          type: string
+          description: 省份
+        city:
+          type: string
+          description: 城市
+        district:
+          type: string
+          description: 区县
+        address:
+          type: string
+          description: 详细地址
+        lng:
+          type: string
+          description: 经度
+        lat:
+          type: string
+          description: 纬度
+        saleNumber:
+          type: integer
+          format: int32
+          description: 销售量
+        businessStartTime:
+          type: string
+          format: date-time
+          description: 营业时间
+        businessEndTime:
+          type: string
+          format: date-time
+          description: 关门时间
+        distance:
+          type: integer
+          format: int32
+          description: 距离(米)
+      x-apifox-orders:
+        - appStoreId
+        - storeName
+        - image
+        - imageUrl
+        - leader
+        - mobile
+        - area
+        - province
+        - city
+        - district
+        - address
+        - lng
+        - lat
+        - saleNumber
+        - businessStartTime
+        - businessEndTime
+        - distance
+      x-apifox-ignore-properties: []
+      x-apifox-folder: ''
+  securitySchemes:
+    apiKey:
+      type: apikey
+      name: Authorization
+      in: header
+servers: []
+security: []
+
+```
