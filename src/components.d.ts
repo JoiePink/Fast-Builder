@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ExpandRowDetail: typeof import('./components/index-components/expand-row-detail.vue')['default']
+    FastBuilderWorkbench: typeof import('./components/FastBuilderWorkbench.vue')['default']
     IconSelect: typeof import('./components/IconSelect/index.vue')['default']
     ListPageAddEdit: typeof import('./components/index-components/list-page-add-edit.vue')['default']
     ListPageDeleteAction: typeof import('./components/index-components/list-page-delete-action.vue')['default']

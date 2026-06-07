@@ -25,7 +25,8 @@
     "vue": "catalog:frontend",
     "vue-i18n": "catalog:frontend",
     "vue-router": "catalog:frontend",
-    "vue-types": "^6.0.0"
+    "vue-types": "^6.0.0",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",
