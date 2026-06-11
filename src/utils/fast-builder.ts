@@ -1,7 +1,10 @@
 import { parse as parseYaml } from 'yaml'
 import type { BuilderConfig, BuilderMeta, ExpandConfig, FieldType, FormWidget, ParamField, PromptStep, PromptStepKey, QueryWidget, TableDisplay } from '~/types/fast-builder'
 
-export function parseApiFoxJson(rawJson: string) {
+export function parseApiFoxJson(rawJson = '') {
+  if (!rawJson.trim())
+    throw new Error('请先粘贴 ApiFox 分页响应 JSON 或 OpenAPI Schema')
+
   const parsed = parseInput(rawJson)
   const schemaResult = parseOpenApiSchema(parsed, rawJson)
   if (schemaResult)
