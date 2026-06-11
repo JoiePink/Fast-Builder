@@ -56,7 +56,17 @@ function parseInput(rawJson: string) {
 }
 
 function extractYamlSource(raw: string) {
+  // 提取 YAML 代码块
+  /**
+   * ```三个反引号,markdown代码块开头
+   * (?:ya?ml)? 可选 yaml 或 yml 或 没有
+   * \s* 语言标记后面可有可无的空白
+   * [\s\S]*? 捕获组：真正要的内容（任意字符，非贪婪）
+   * ``` 三个反引号,markdown代码块结尾
+   * i 忽略大小写
+   */
   const codeBlock = raw.match(/```(?:ya?ml)?\s*([\s\S]*?)```/i)
+  console.log(codeBlock)
   if (codeBlock?.[1])
     return codeBlock[1].trim()
   if (/openapi:\s*3\./.test(raw) && /paths:\s*/.test(raw))

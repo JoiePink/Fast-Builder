@@ -17,26 +17,26 @@ const editingField = ref<ParamField>()
 const sourcePanelCollapsed = ref(true)
 
 const meta = reactive<BuilderMeta>({
-  businessName: '客户',
-  pageName: '客户管理',
+  businessName: '',
+  pageName: '',
   listPath: '',
-  listApi: 'listCustomer',
-  detailApi: 'getCustomer',
-  addApi: 'addCustomer',
-  updateApi: 'updateCustomer',
-  removeApi: 'delCustomer',
+  listApi: '',
+  detailApi: '',
+  addApi: '',
+  updateApi: '',
+  removeApi: '',
   primaryKey: 'id',
   permissionConfig: {
-    detail: 'system:customer:query',
-    add: 'system:customer:add',
-    edit: 'system:customer:edit',
-    remove: 'system:customer:remove',
-    export: 'system:customer:export',
+    detail: '',
+    add: '',
+    edit: '',
+    remove: '',
+    export: '',
   },
   exportConfig: {
     enabled: false,
-    url: 'admin/customer/export',
-    fileName: '客户',
+    url: '',
+    fileName: '',
   },
 })
 const expandConfig = reactive<ExpandConfig>(createDefaultExpandConfig())
@@ -197,10 +197,8 @@ function ensureDateRangeConfig(field: ParamField) {
 
         <el-collapse-transition>
           <div v-show="!sourcePanelCollapsed">
-            <el-input
-              v-model="rawJson" type="textarea" :rows="12" resize="vertical" spellcheck="false"
-              placeholder="粘贴 ApiFox 分页列表接口响应 JSON，或 ApiFox 导出的 OpenAPI Schema"
-            />
+            <el-input v-model="rawJson" type="textarea" :rows="12" resize="vertical" spellcheck="false"
+              placeholder="粘贴 ApiFox 分页列表接口响应 JSON，或 ApiFox 导出的 OpenAPI Schema" />
 
             <div class="my-3 flex flex-wrap gap-2">
               <el-button type="primary" plain :icon="MagicStick" @click="handleParse">
@@ -226,13 +224,13 @@ function ensureDateRangeConfig(field: ParamField) {
 
         <el-form label-position="top" class="grid grid-cols-1 gap-x-3 md:grid-cols-2 xl:grid-cols-4">
           <el-form-item label="业务名称">
-            <el-input v-model="meta.businessName" placeholder="如：客户" />
+            <el-input v-model="meta.businessName" />
           </el-form-item>
           <el-form-item label="页面名称">
-            <el-input v-model="meta.pageName" placeholder="如：客户管理" />
+            <el-input v-model="meta.pageName" />
           </el-form-item>
           <el-form-item label="列表接口地址">
-            <el-input v-model="meta.listPath" placeholder="如 /api/customer/list" />
+            <el-input v-model="meta.listPath" />
           </el-form-item>
           <el-form-item label="列表接口">
             <el-input v-model="meta.listApi" />
@@ -295,10 +293,8 @@ function ensureDateRangeConfig(field: ParamField) {
                 </el-button>
               </div>
             </div>
-            <el-form
-              v-if="meta.exportConfig.enabled" label-position="top"
-              class="grid grid-cols-1 mb-3 gap-x-3 md:grid-cols-2"
-            >
+            <el-form v-if="meta.exportConfig.enabled" label-position="top"
+              class="grid grid-cols-1 mb-3 gap-x-3 md:grid-cols-2">
               <el-form-item label="导出接口地址">
                 <el-input v-model="meta.exportConfig.url" placeholder="如 admin/customer/export" />
               </el-form-item>
@@ -306,14 +302,14 @@ function ensureDateRangeConfig(field: ParamField) {
                 <el-input v-model="meta.exportConfig.fileName" placeholder="如 客户" />
               </el-form-item>
             </el-form>
-            <el-table :data="paramsList" :height="fieldsTableHeight" size="small" border>
+            <el-table :data="paramsList" border>
               <el-table-column label="是否需要" width="92" align="center" fixed>
                 <template #default="{ row }">
                   <el-switch v-model="row.enabled" />
                 </template>
               </el-table-column>
               <el-table-column label="字段" prop="field" min-width="140" fixed />
-              <el-table-column label="标题" min-width="150">
+              <el-table-column label="标题" min-width="150" fixed>
                 <template #default="{ row }">
                   <el-input v-model="row.label" size="small" :disabled="!row.enabled" />
                 </template>
@@ -330,10 +326,8 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="字典类型" min-width="180">
                 <template #default="{ row }">
-                  <el-input
-                    v-model="row.dictType" size="small" :disabled="!row.enabled"
-                    placeholder="如 sys_normal_disable"
-                  />
+                  <el-input v-model="row.dictType" size="small" :disabled="!row.enabled"
+                    placeholder="如 sys_normal_disable" />
                 </template>
               </el-table-column>
               <el-table-column label="选项来源" min-width="130">
@@ -346,10 +340,8 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="备注映射" min-width="180">
                 <template #default="{ row }">
-                  <el-input
-                    v-model="row.enumRemark" size="small"
-                    :disabled="!row.enabled || row.selectSource !== 'remark'" placeholder="如 0是，1否"
-                  />
+                  <el-input v-model="row.enumRemark" size="small"
+                    :disabled="!row.enabled || row.selectSource !== 'remark'" placeholder="如 0是，1否" />
                 </template>
               </el-table-column>
               <el-table-column label="查询" width="76" align="center">
@@ -359,10 +351,8 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="查询控件" min-width="150">
                 <template #default="{ row }">
-                  <el-select
-                    v-model="row.query.widget" size="small" :disabled="!row.enabled"
-                    @change="ensureDateRangeConfig(row)"
-                  >
+                  <el-select v-model="row.query.widget" size="small" :disabled="!row.enabled"
+                    @change="ensureDateRangeConfig(row)">
                     <el-option label="el-input" value="el-input" />
                     <el-option label="el-select" value="el-select" />
                     <el-option label="el-date-picker" value="el-date-picker" />
@@ -372,11 +362,9 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="范围查询" width="92" align="center">
                 <template #default="{ row }">
-                  <el-switch
-                    v-model="normalizeField(row).query.dateRange.enabled"
+                  <el-switch v-model="normalizeField(row).query.dateRange.enabled"
                     :disabled="!row.enabled || !row.query.enabled || row.query.widget !== 'el-date-picker'"
-                    @change="ensureDateRangeConfig(row)"
-                  />
+                    @change="ensureDateRangeConfig(row)" />
                 </template>
               </el-table-column>
               <el-table-column label="范围参数" min-width="210">
@@ -390,10 +378,8 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="主表展示" min-width="160">
                 <template #default="{ row }">
-                  <el-select
-                    v-model="row.table.display" size="small"
-                    :disabled="!row.enabled || row.displayTarget !== 'table'"
-                  >
+                  <el-select v-model="row.table.display" size="small"
+                    :disabled="!row.enabled || row.displayTarget !== 'table'">
                     <el-option label="text" value="text" />
                     <el-option label="image-preview" value="image-preview" />
                     <el-option label="dict-tag" value="dict-tag" />
@@ -404,10 +390,8 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="展开模式" min-width="140">
                 <template #default="{ row }">
-                  <el-select
-                    v-model="row.expand.mode" size="small"
-                    :disabled="!row.enabled || row.displayTarget !== 'expand'"
-                  >
+                  <el-select v-model="row.expand.mode" size="small"
+                    :disabled="!row.enabled || row.displayTarget !== 'expand'">
                     <el-option label="描述项" value="description" />
                     <el-option label="子表格" value="table" />
                   </el-select>
@@ -415,10 +399,8 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="展开展示" min-width="160">
                 <template #default="{ row }">
-                  <el-select
-                    v-model="row.expand.display" size="small"
-                    :disabled="!row.enabled || row.displayTarget !== 'expand' || row.expand.mode !== 'description'"
-                  >
+                  <el-select v-model="row.expand.display" size="small"
+                    :disabled="!row.enabled || row.displayTarget !== 'expand' || row.expand.mode !== 'description'">
                     <el-option label="text" value="text" />
                     <el-option label="image-preview" value="image-preview" />
                     <el-option label="dict-tag" value="dict-tag" />
@@ -439,10 +421,8 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="表单控件" min-width="150">
                 <template #default="{ row }">
-                  <el-select
-                    v-model="row.form.widget" size="small" :disabled="!row.enabled"
-                    @change="ensureFormWidgetConfig(row)"
-                  >
+                  <el-select v-model="row.form.widget" size="small" :disabled="!row.enabled"
+                    @change="ensureFormWidgetConfig(row)">
                     <el-option label="el-input" value="el-input" />
                     <el-option label="el-textarea" value="el-textarea" />
                     <el-option label="el-select" value="el-select" />
@@ -456,12 +436,10 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-table-column>
               <el-table-column label="上传张数" width="110" align="center">
                 <template #default="{ row }">
-                  <el-input-number
-                    v-model="row.form.uploadLimit" size="small" :min="1" :max="20"
+                  <el-input-number v-model="row.form.uploadLimit" size="small" :min="1" :max="20"
                     controls-position="right"
                     :disabled="!row.enabled || !row.form.enabled || row.form.widget !== 'image-upload'"
-                    class="w-full"
-                  />
+                    class="w-full" />
                 </template>
               </el-table-column>
               <el-table-column label="必填" width="76" align="center">
@@ -499,10 +477,8 @@ function ensureDateRangeConfig(field: ParamField) {
       </el-card>
     </section>
 
-    <el-dialog
-      v-model="fieldDialogOpen" title="字段配置" width="min(920px, calc(100vw - 32px))" append-to-body
-      destroy-on-close
-    >
+    <el-dialog v-model="fieldDialogOpen" title="字段配置" width="min(920px, calc(100vw - 32px))" append-to-body
+      destroy-on-close>
       <el-form v-if="editingField" label-position="top" class="field-config-form">
         <section class="field-config-section">
           <div class="field-config-title">
@@ -512,10 +488,8 @@ function ensureDateRangeConfig(field: ParamField) {
           <div class="field-config-grid field-config-grid--three">
             <el-form-item label="选择字段">
               <el-select :model-value="editingFieldIndex" class="w-full" @update:model-value="selectEditingField">
-                <el-option
-                  v-for="(item, index) in paramsList" :key="item.field"
-                  :label="`${item.field} - ${item.label}`" :value="index"
-                />
+                <el-option v-for="(item, index) in paramsList" :key="item.field"
+                  :label="`${item.field} - ${item.label}`" :value="index" />
               </el-select>
             </el-form-item>
 
@@ -554,17 +528,13 @@ function ensureDateRangeConfig(field: ParamField) {
             </el-form-item>
 
             <el-form-item label="字典类型">
-              <el-input
-                v-model="editingField.dictType" :disabled="!editingField.enabled"
-                placeholder="如 sys_normal_disable"
-              />
+              <el-input v-model="editingField.dictType" :disabled="!editingField.enabled"
+                placeholder="如 sys_normal_disable" />
             </el-form-item>
 
             <el-form-item label="备注映射">
-              <el-input
-                v-model="editingField.enumRemark"
-                :disabled="!editingField.enabled || editingField.selectSource !== 'remark'" placeholder="如 0是，1否"
-              />
+              <el-input v-model="editingField.enumRemark"
+                :disabled="!editingField.enabled || editingField.selectSource !== 'remark'" placeholder="如 0是，1否" />
             </el-form-item>
           </div>
         </section>
@@ -572,18 +542,14 @@ function ensureDateRangeConfig(field: ParamField) {
         <section class="field-config-section">
           <div class="field-config-title">
             <span>条件查询</span>
-            <el-switch
-              v-model="editingField.query.enabled" :disabled="!editingField.enabled" active-text="启用"
-              inactive-text="关闭"
-            />
+            <el-switch v-model="editingField.query.enabled" :disabled="!editingField.enabled" active-text="启用"
+              inactive-text="关闭" />
           </div>
           <div class="field-config-grid field-config-grid--two">
             <el-form-item label="查询控件">
-              <el-select
-                v-model="editingField.query.widget"
+              <el-select v-model="editingField.query.widget"
                 :disabled="!editingField.enabled || !editingField.query.enabled" class="w-full"
-                @change="ensureDateRangeConfig(editingField)"
-              >
+                @change="ensureDateRangeConfig(editingField)">
                 <el-option label="el-input" value="el-input" />
                 <el-option label="el-select" value="el-select" />
                 <el-option label="el-date-picker" value="el-date-picker" />
@@ -592,26 +558,20 @@ function ensureDateRangeConfig(field: ParamField) {
             </el-form-item>
 
             <el-form-item label="日期范围查询">
-              <el-switch
-                v-model="editingField.query.dateRange.enabled"
+              <el-switch v-model="editingField.query.dateRange.enabled"
                 :disabled="!editingField.enabled || !editingField.query.enabled || editingField.query.widget !== 'el-date-picker'"
-                active-text="启用" inactive-text="关闭" @change="ensureDateRangeConfig(editingField)"
-              />
+                active-text="启用" inactive-text="关闭" @change="ensureDateRangeConfig(editingField)" />
             </el-form-item>
 
             <template v-if="editingField.query.dateRange.enabled">
               <el-form-item label="范围变量名">
-                <el-input
-                  v-model="editingField.query.dateRange.model"
-                  :disabled="!editingField.enabled || !editingField.query.enabled" placeholder="如 dateRange"
-                />
+                <el-input v-model="editingField.query.dateRange.model"
+                  :disabled="!editingField.enabled || !editingField.query.enabled" placeholder="如 dateRange" />
               </el-form-item>
 
               <el-form-item label="真实参数数量">
-                <el-radio-group
-                  v-model="editingField.query.dateRange.paramCount"
-                  :disabled="!editingField.enabled || !editingField.query.enabled"
-                >
+                <el-radio-group v-model="editingField.query.dateRange.paramCount"
+                  :disabled="!editingField.enabled || !editingField.query.enabled">
                   <el-radio-button :value="1">
                     1个
                   </el-radio-button>
@@ -622,17 +582,13 @@ function ensureDateRangeConfig(field: ParamField) {
               </el-form-item>
 
               <el-form-item :label="editingField.query.dateRange.paramCount === 1 ? '接口参数名' : '开始参数名'">
-                <el-input
-                  v-model="editingField.query.dateRange.beginParam"
-                  :disabled="!editingField.enabled || !editingField.query.enabled" placeholder="如 createTimeBegin"
-                />
+                <el-input v-model="editingField.query.dateRange.beginParam"
+                  :disabled="!editingField.enabled || !editingField.query.enabled" placeholder="如 createTimeBegin" />
               </el-form-item>
 
               <el-form-item v-if="editingField.query.dateRange.paramCount === 2" label="结束参数名">
-                <el-input
-                  v-model="editingField.query.dateRange.endParam"
-                  :disabled="!editingField.enabled || !editingField.query.enabled" placeholder="如 createTimeEnd"
-                />
+                <el-input v-model="editingField.query.dateRange.endParam"
+                  :disabled="!editingField.enabled || !editingField.query.enabled" placeholder="如 createTimeEnd" />
               </el-form-item>
             </template>
           </div>
@@ -644,10 +600,8 @@ function ensureDateRangeConfig(field: ParamField) {
           </div>
           <div class="field-config-grid field-config-grid--two">
             <el-form-item label="主表展示">
-              <el-select
-                v-model="editingField.table.display"
-                :disabled="!editingField.enabled || editingField.displayTarget !== 'table'" class="w-full"
-              >
+              <el-select v-model="editingField.table.display"
+                :disabled="!editingField.enabled || editingField.displayTarget !== 'table'" class="w-full">
                 <el-option label="text" value="text" />
                 <el-option label="image-preview" value="image-preview" />
                 <el-option label="dict-tag" value="dict-tag" />
@@ -657,21 +611,17 @@ function ensureDateRangeConfig(field: ParamField) {
             </el-form-item>
 
             <el-form-item label="展开模式">
-              <el-select
-                v-model="editingField.expand.mode"
-                :disabled="!editingField.enabled || editingField.displayTarget !== 'expand'" class="w-full"
-              >
+              <el-select v-model="editingField.expand.mode"
+                :disabled="!editingField.enabled || editingField.displayTarget !== 'expand'" class="w-full">
                 <el-option label="描述项" value="description" />
                 <el-option label="子表格" value="table" />
               </el-select>
             </el-form-item>
 
             <el-form-item label="展开展示">
-              <el-select
-                v-model="editingField.expand.display"
+              <el-select v-model="editingField.expand.display"
                 :disabled="!editingField.enabled || editingField.displayTarget !== 'expand' || editingField.expand.mode !== 'description'"
-                class="w-full"
-              >
+                class="w-full">
                 <el-option label="text" value="text" />
                 <el-option label="image-preview" value="image-preview" />
                 <el-option label="dict-tag" value="dict-tag" />
@@ -685,28 +635,22 @@ function ensureDateRangeConfig(field: ParamField) {
         <section class="field-config-section">
           <div class="field-config-title">
             <span>详情展示</span>
-            <el-switch
-              v-model="editingField.detail.enabled" :disabled="!editingField.enabled" active-text="启用"
-              inactive-text="关闭"
-            />
+            <el-switch v-model="editingField.detail.enabled" :disabled="!editingField.enabled" active-text="启用"
+              inactive-text="关闭" />
           </div>
         </section>
 
         <section class="field-config-section">
           <div class="field-config-title">
             <span>新增 / 修改表单</span>
-            <el-switch
-              v-model="editingField.form.enabled" :disabled="!editingField.enabled" active-text="启用"
-              inactive-text="关闭"
-            />
+            <el-switch v-model="editingField.form.enabled" :disabled="!editingField.enabled" active-text="启用"
+              inactive-text="关闭" />
           </div>
           <div class="field-config-grid field-config-grid--two">
             <el-form-item label="表单控件">
-              <el-select
-                v-model="editingField.form.widget"
+              <el-select v-model="editingField.form.widget"
                 :disabled="!editingField.enabled || !editingField.form.enabled" class="w-full"
-                @change="ensureFormWidgetConfig(editingField)"
-              >
+                @change="ensureFormWidgetConfig(editingField)">
                 <el-option label="el-input" value="el-input" />
                 <el-option label="el-textarea" value="el-textarea" />
                 <el-option label="el-select" value="el-select" />
@@ -719,17 +663,13 @@ function ensureDateRangeConfig(field: ParamField) {
             </el-form-item>
 
             <el-form-item v-if="editingField.form.widget === 'image-upload'" label="最多上传张数">
-              <el-input-number
-                v-model="editingField.form.uploadLimit" :min="1" :max="20" controls-position="right"
-                :disabled="!editingField.enabled || !editingField.form.enabled" class="w-full"
-              />
+              <el-input-number v-model="editingField.form.uploadLimit" :min="1" :max="20" controls-position="right"
+                :disabled="!editingField.enabled || !editingField.form.enabled" class="w-full" />
             </el-form-item>
 
             <el-form-item label="是否必填">
-              <el-switch
-                v-model="editingField.form.required"
-                :disabled="!editingField.enabled || !editingField.form.enabled"
-              />
+              <el-switch v-model="editingField.form.required"
+                :disabled="!editingField.enabled || !editingField.form.enabled" />
             </el-form-item>
           </div>
         </section>
@@ -794,6 +734,7 @@ function ensureDateRangeConfig(field: ParamField) {
 }
 
 @media (max-width: 768px) {
+
   .field-config-grid,
   .field-config-grid--two,
   .field-config-grid--three {
