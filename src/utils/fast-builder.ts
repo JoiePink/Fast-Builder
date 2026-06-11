@@ -1,34 +1,6 @@
 import { parse as parseYaml } from 'yaml'
 import type { BuilderConfig, BuilderMeta, ExpandConfig, FieldType, FormWidget, ParamField, PromptStep, PromptStepKey, QueryWidget, TableDisplay } from '~/types/fast-builder'
 
-export const sampleApiFoxJson = JSON.stringify({
-  code: 200,
-  msg: '操作成功',
-  total: 2,
-  data: {
-    rows: [
-      {
-        id: 1,
-        customerName: '杭州星河科技',
-        customerCode: 'KH202606001',
-        status: '0',
-        logoUrl: 'https://example.com/logo.png',
-        contactPhone: '13800000000',
-        createTime: '2026-06-06 10:30:00',
-      },
-      {
-        id: 2,
-        customerName: '上海云舟贸易',
-        customerCode: 'KH202606002',
-        status: '1',
-        logoUrl: 'https://example.com/logo2.png',
-        contactPhone: '13900000000',
-        createTime: '2026-06-06 11:20:00',
-      },
-    ],
-  },
-}, null, 2)
-
 export function parseApiFoxJson(rawJson: string) {
   const parsed = parseInput(rawJson)
   const schemaResult = parseOpenApiSchema(parsed, rawJson)
