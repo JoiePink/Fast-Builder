@@ -638,6 +638,7 @@ function createParamField(
     table: {
       enabled: true,
       display: defaultDisplay(type, rawField),
+      tagType: 'primary',
     },
     form: {
       enabled: !isReadonlyField(rawField),
@@ -647,6 +648,7 @@ function createParamField(
     },
     expand: {
       display: defaultDisplay(type, rawField),
+      tagType: 'primary',
     },
     children: [],
   }
@@ -789,7 +791,7 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '调用列表接口时，按项目既有写法使用 proxy?.reconstructDateRange(queryParams.value, 日期范围变量.value, beginParam, endParam)。如果 paramCount 为 1，只传配置的 beginParam；如果 paramCount 为 2，同时传 beginParam 和 endParam；如果存在多个日期范围字段，先按相同规则构造请求参数后再调用 apiNames.list。',
         'resetQuery 中除了 queryFormRef.value?.resetFields()，还要把所有日期范围变量重置为 [\'\', \'\']。',
         '按 tableColumns 生成 el-table 列；dict-tag 字段统一使用字段级 dictType。',
-        '处理 text、image-preview、dict-tag、el-tag、date-format 展示类型。',
+        '处理 text、image-preview、dict-tag、el-tag、date-format 展示类型；display 为 el-tag 时必须读取 table.tagType 作为 <el-tag> 的 type，未配置时默认 primary。',
         '加入若依分页组件，并确保分页变化会重新调用列表接口。',
         'ignoredFields 是用户关闭“是否需要”的字段，不要生成到页面中。',
         '查询、重置按钮默认不加权限。',
@@ -841,7 +843,8 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '主表格需要支持 preserve-expanded-content、:default-expand-all="tableExpand"，并保留已有 loading、data、分页逻辑。',
         '展开行只使用 el-descriptions，不要生成展开子表格或嵌套 el-table。',
         '按 expandConfig.groups 生成一个或多个 el-descriptions；group.title 有值时作为 title，没有值时不传 title。',
-        '每个 group.fields 是该描述项组合包含的字段名列表；字段标题、展示形式、dictType 等仍然读取 expandFields 中对应字段的配置。',
+        '每个 group.fields 是该描述项组合包含的字段名列表；字段标题、展示形式、dictType、tagType 等仍然读取 expandFields 中对应字段的配置。',
+        'expand.display 为 el-tag 时必须读取 expand.tagType 作为 <el-tag> 的 type，未配置时默认 primary。',
         '所有 el-descriptions 的 column 使用 expandConfig.descriptionColumn。',
         'el-descriptions 保持 label-width="120"，样式保持 margin-top: 10px; padding: 0 10px;。',
         '如果 expandFields 为空，本步骤不要生成展开行。',

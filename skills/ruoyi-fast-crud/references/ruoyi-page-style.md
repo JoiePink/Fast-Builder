@@ -10,6 +10,7 @@
 - 日期范围查询必须保持 `order/orderList/index.vue` 的公司内部写法：模板使用 `el-date-picker class="serarchInput"`、`type="daterange"`、`value-format="YYYY-MM-DD HH:mm:ss"`，脚本中使用 `dateRange = ref<any>(['', ''])` 这类范围变量，请求前通过 `proxy?.reconstructDateRange(queryParams.value, dateRange.value, 'createTimeBegin', 'createTimeEnd')` 生成真实参数，重置时清空范围变量。
 - 使用项目已有分页组件和 `right-toolbar` 写法。
 - 字典、图片预览、日期格式化、权限指令优先使用项目已有封装，例如 `dict-tag`、`image-preview`。
+- 主表格字段展示形式为 `el-tag` 时，使用配置里的 `table.tagType` 作为 `<el-tag>` 的 `type`；缺省为 `primary`。
 - 查询、重置按钮默认不加权限；`exportConfig.enabled = true` 时，导出按钮使用 `permissionConfig.export`。
 - 导出保持 `order/orderList/index.vue` 风格：按钮使用 `type="warning"`、`plain`、`icon="Download"`、`@click="handleExport"`；`handleExport` 复制 `queryParams.value`，删除 `pageNum` / `pageSize`，再调用 `proxy?.download(exportConfig.url, { ...subData }, 文件名)`。
 - 导出是导出分页表格全部字段，不是只导出当前页；如果查询条件里有日期范围，导出参数也要沿用同样的日期范围参数处理方式。
@@ -62,6 +63,6 @@
 - 主表格按项目风格支持 `preserve-expanded-content` 和 `:default-expand-all="tableExpand"`。
 - 展开行只使用 `el-descriptions`，不要生成展开子表格或嵌套 `el-table`。
 - 按 `expandConfig.groups` 生成一个或多个描述项组合；`group.title` 有值时作为标题，没有值时不传标题。
-- `group.fields` 控制每个组合中展示哪些展开字段；字段展示形式继续读取 `expandFields` 中对应字段的 `expand.display`。
+- `group.fields` 控制每个组合中展示哪些展开字段；字段展示形式继续读取 `expandFields` 中对应字段的 `expand.display`，其中 `el-tag` 使用 `expand.tagType` 作为 `<el-tag>` 的 `type`。
 - 每个 `<el-descriptions>` 的列数使用 `expandConfig.descriptionColumn`。
 - 描述列表默认保持 `label-width="120"` 和 `style="margin-top: 10px; padding: 0 10px;"`，除非目标项目附近页面有不同风格。

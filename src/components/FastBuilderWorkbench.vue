@@ -111,13 +111,18 @@ function normalizeField(field: ParamField): ParamField {
     field.parentField = ''
   if (!field.children)
     field.children = []
+  if (!field.table.tagType)
+    field.table.tagType = 'primary'
   if (!field.expand) {
     field.expand = {
       display: field.table.display,
+      tagType: 'primary',
     }
   }
   if (!field.expand.display)
     field.expand.display = field.table.display
+  if (!field.expand.tagType)
+    field.expand.tagType = 'primary'
   if (!field.query.dateRange) {
     field.query.dateRange = {
       enabled: field.query.widget === 'el-date-picker',
@@ -483,6 +488,30 @@ function removeExpandGroup(index: number) {
                         </el-select>
                         <span v-else class="text-xs text-slate-400">-</span>
                       </el-descriptions-item>
+                      <el-descriptions-item
+                        v-if="row.displayTarget === 'table' && row.table.display === 'el-tag'"
+                        label="标签类型"
+                      >
+                        <el-radio-group v-model="row.table.tagType" :disabled="!row.enabled">
+                          <el-radio-button value="primary">primary</el-radio-button>
+                          <el-radio-button value="success">success</el-radio-button>
+                          <el-radio-button value="info">info</el-radio-button>
+                          <el-radio-button value="warning">warning</el-radio-button>
+                          <el-radio-button value="danger">danger</el-radio-button>
+                        </el-radio-group>
+                      </el-descriptions-item>
+                      <el-descriptions-item
+                        v-else-if="row.displayTarget === 'expand' && row.expand.display === 'el-tag'"
+                        label="标签类型"
+                      >
+                        <el-radio-group v-model="row.expand.tagType" :disabled="!row.enabled">
+                          <el-radio-button value="primary">primary</el-radio-button>
+                          <el-radio-button value="success">success</el-radio-button>
+                          <el-radio-button value="info">info</el-radio-button>
+                          <el-radio-button value="warning">warning</el-radio-button>
+                          <el-radio-button value="danger">danger</el-radio-button>
+                        </el-radio-group>
+                      </el-descriptions-item>
                     </el-descriptions>
 
                     <el-descriptions v-if="row.form.enabled" title="添加/编辑弹窗设置" :column="3" border>
@@ -578,6 +607,30 @@ function removeExpandGroup(index: number) {
                                     <el-option label="date-format" value="date-format" />
                                   </el-select>
                                   <span v-else class="text-xs text-slate-400">-</span>
+                                </el-descriptions-item>
+                                <el-descriptions-item
+                                  v-if="child.displayTarget === 'table' && child.table.display === 'el-tag'"
+                                  label="标签类型"
+                                >
+                                  <el-radio-group v-model="child.table.tagType" :disabled="!child.enabled">
+                                    <el-radio-button value="primary">primary</el-radio-button>
+                                    <el-radio-button value="success">success</el-radio-button>
+                                    <el-radio-button value="info">info</el-radio-button>
+                                    <el-radio-button value="warning">warning</el-radio-button>
+                                    <el-radio-button value="danger">danger</el-radio-button>
+                                  </el-radio-group>
+                                </el-descriptions-item>
+                                <el-descriptions-item
+                                  v-else-if="child.displayTarget === 'expand' && child.expand.display === 'el-tag'"
+                                  label="标签类型"
+                                >
+                                  <el-radio-group v-model="child.expand.tagType" :disabled="!child.enabled">
+                                    <el-radio-button value="primary">primary</el-radio-button>
+                                    <el-radio-button value="success">success</el-radio-button>
+                                    <el-radio-button value="info">info</el-radio-button>
+                                    <el-radio-button value="warning">warning</el-radio-button>
+                                    <el-radio-button value="danger">danger</el-radio-button>
+                                  </el-radio-group>
                                 </el-descriptions-item>
                               </el-descriptions>
 

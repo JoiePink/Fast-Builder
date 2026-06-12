@@ -2,6 +2,7 @@ export type FieldType = 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 
 export type QueryWidget = 'el-input' | 'el-select' | 'el-date-picker' | 'el-switch'
 export type FormWidget = QueryWidget | 'el-textarea' | 'el-input-number' | 'el-select-multiple' | 'el-radio' | 'image-upload'
 export type TableDisplay = 'text' | 'image-preview' | 'dict-tag' | 'el-tag' | 'date-format'
+export type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 export type SelectSource = 'dict' | 'remark'
 export type PromptStepKey = 'step1_query_page' | 'step3_form' | 'step4_delete' | 'step5_expand_row'
 export type DisplayTarget = 'table' | 'expand' | 'none'
@@ -48,6 +49,7 @@ export interface ParamField {
   table: {
     enabled: boolean
     display: TableDisplay
+    tagType: TagType
   }
   form: {
     enabled: boolean
@@ -57,6 +59,7 @@ export interface ParamField {
   }
   expand: {
     display: TableDisplay
+    tagType: TagType
   }
   children: ParamField[]
 }

@@ -206,6 +206,44 @@ describe('fast-builder sort fields', () => {
     expect(generatePromptSteps(config).find(item => item.key === 'step5_expand_row')?.prompt).toContain('"field": "profile.nickName"')
   })
 
+  it('keeps el-tag type config in generated table and expand json', () => {
+    const result = parseApiFoxJson(JSON.stringify({
+      rows: [
+        {
+          id: 1,
+          status: 'enabled',
+          auditStatus: 'pending',
+        },
+      ],
+    }))
+    const statusField = result.paramsList.find(item => item.field === 'status')
+    const auditStatusField = result.paramsList.find(item => item.field === 'auditStatus')
+
+    if (statusField) {
+      statusField.table.display = 'el-tag'
+    }
+    if (auditStatusField) {
+      auditStatusField.displayTarget = 'expand'
+      auditStatusField.expand.display = 'el-tag'
+      auditStatusField.expand.tagType = 'warning'
+    }
+
+    const config = buildConfig(createMeta(), result.paramsList, createDefaultExpandConfig())
+    const queryPrompt = generatePromptSteps(config).find(item => item.key === 'step1_query_page')?.prompt
+    const expandPrompt = generatePromptSteps(config).find(item => item.key === 'step5_expand_row')?.prompt
+
+    expect(config.tableColumns.find(item => item.field === 'status')?.table).toMatchObject({
+      display: 'el-tag',
+      tagType: 'primary',
+    })
+    expect(config.expandFields.find(item => item.field === 'auditStatus')?.expand).toMatchObject({
+      display: 'el-tag',
+      tagType: 'warning',
+    })
+    expect(queryPrompt).toContain('table.tagType')
+    expect(expandPrompt).toContain('expand.tagType')
+  })
+
   it('parses request body schema as table operation config', () => {
     const result = parseApiFoxJson(`
 \`\`\`yaml

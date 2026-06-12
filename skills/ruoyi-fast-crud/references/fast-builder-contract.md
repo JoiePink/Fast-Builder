@@ -35,6 +35,7 @@ Fast-Builder 会输出一份共享的 `BuilderConfig`、四份分阶段提示词
   - 日期范围请求参数必须按项目内部方法 `proxy?.reconstructDateRange(...)` 生成。
 - `tableColumns`：主表格字段。
 - `expandFields`：展开行字段。
+- 字段展示形式为 `el-tag` 时，主表格使用 `table.tagType`，展开行使用 `expand.tagType` 作为 `<el-tag>` 的 `type`；缺省值为 `primary`。
 - `formFields`：新增 / 修改表单字段。
   - `form.widget` 支持 `el-input`、`el-textarea`、`el-input-number`、`el-select`、`el-select-multiple`、`el-radio`、`el-date-picker`、`el-switch`、`image-upload`。
   - `form.widget = el-input-number` 时，生成 ElementPlus 数字输入框；字段名包含 sort 的排序字段（如 `sort`、`sortOrder`、`sortNo`、`displaySort`）必须使用 `el-input-number`，不要使用普通 `el-input`。
@@ -89,8 +90,8 @@ Fast-Builder 会输出一份共享的 `BuilderConfig`、四份分阶段提示词
 - `enumRemark`：静态枚举备注，例如 `0是，1否`。
 - `displayTarget`：`table`、`expand` 或 `none`。
 - `query`：查询表单配置。
-- `table`：主表格展示配置。
-- `expand`：展开行展示配置，只包含该字段在 `el-descriptions` 中的展示形式；字段属于哪个描述项组合由 `expandConfig.groups` 决定。
+- `table`：主表格展示配置；`display = el-tag` 时使用 `table.tagType`。
+- `expand`：展开行展示配置，只包含该字段在 `el-descriptions` 中的展示形式；字段属于哪个描述项组合由 `expandConfig.groups` 决定；`display = el-tag` 时使用 `expand.tagType`。
 - `form`：新增 / 修改表单配置。
 
 `displayTarget` 控制列表展示位置：
