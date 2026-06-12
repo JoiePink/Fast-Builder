@@ -1,6 +1,6 @@
 ---
 name: ruoyi-fast-crud
-description: 根据 Fast-Builder 生成的五阶段提示词，在 RuoYi-Vue-Plus / 若依前后端分离后台管理项目中增量实现 CRUD 页面。适用于用户粘贴 BuilderConfig 或 step1_query_page、step2_detail、step3_form、step4_delete、step5_expand_row 任一步提示词，并要求 Codex 严格按若依 + ElementPlus 项目风格只实现当前步骤。
+description: 根据 Fast-Builder 生成的四阶段提示词，在 RuoYi-Vue-Plus / 若依前后端分离后台管理项目中增量实现 CRUD 页面。适用于用户粘贴 BuilderConfig 或 step1_query_page、step3_form、step4_delete、step5_expand_row 任一步提示词，并要求 Codex 严格按若依 + ElementPlus 项目风格只实现当前步骤。
 ---
 
 # RuoYi Fast CRUD
@@ -11,7 +11,6 @@ description: 根据 Fast-Builder 生成的五阶段提示词，在 RuoYi-Vue-Plu
 
 1. 先识别当前 Fast-Builder 步骤：
    - `step1_query_page`：只实现条件查询、列表表格、loading、分页、重置、列表请求。
-   - `step2_detail`：只实现表格行查看详情。
    - `step3_form`：只实现新增 / 修改弹窗表单。
    - `step4_delete`：只实现单条删除。
    - `step5_expand_row`：只实现展开行和展开/折叠逻辑。
@@ -36,6 +35,7 @@ description: 根据 Fast-Builder 生成的五阶段提示词，在 RuoYi-Vue-Plu
 - `permissionConfig` 只用于当前步骤已生成或已存在的按钮，不要因为配置里有其他权限码就主动补全其他 CRUD 按钮。
 - 按钮权限指令必须参考目标项目相邻页面；如果相邻页面使用 `v-hasPermi`，就按 `v-hasPermi="['权限码']"` 生成。
 - 目标项目已有若依封装组件时，不要替换成普通 ElementPlus 写法。
+- 不生成查看详情按钮、详情弹窗或单独的详情阶段。
 - 实现 `step1_query_page` 时，`queryParams` 默认必须包含 `orderByColumn: 'createTime'` 和 `isAsc: 'desc'`；分页查询、重置查询和导出参数都要保留这组默认排序，不要把 `orderByColumn`、`isAsc` 生成成查询表单控件。
 - 新增 / 修改表单中，字段名包含 sort 的排序字段（如 `sort`、`sortOrder`、`sortNo`、`displaySort`）必须使用 ElementPlus 数字输入框 `el-input-number`，不要使用普通 `el-input`。
 - `tableColumns` 和 `expandFields` 是互斥的展示结果，同一个字段不要同时生成到主表格和展开行。

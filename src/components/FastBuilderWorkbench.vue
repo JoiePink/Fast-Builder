@@ -15,6 +15,7 @@ const fieldDialogOpen = ref(false)
 const editingFieldIndex = ref<number>()
 const editingField = ref<ParamField>()
 const sourcePanelCollapsed = ref(true)
+const expandedFieldKeys = ref<string[]>([])
 
 const meta = reactive<BuilderMeta>({
   businessName: '',
@@ -27,7 +28,6 @@ const meta = reactive<BuilderMeta>({
   removeApi: '',
   primaryKey: 'id',
   permissionConfig: {
-    detail: '',
     add: '',
     edit: '',
     remove: '',
@@ -45,6 +45,7 @@ const enabledFields = computed(() => paramsList.value.filter(item => item.enable
 const builderConfig = computed(() => buildConfig(meta, paramsList.value, expandConfig))
 const configJson = computed(() => JSON.stringify(builderConfig.value, null, 2))
 const promptSteps = computed(() => generatePromptSteps(builderConfig.value))
+const allFieldRowsExpanded = computed(() => paramsList.value.length > 0 && expandedFieldKeys.value.length === paramsList.value.length)
 
 function handleParse() {
   if (!rawJson.value.trim()) {
@@ -60,6 +61,7 @@ function handleParse() {
     meta.primaryKey = getDefaultPrimaryKey(paramsList.value)
     if ('apiPath' in result && result.apiPath)
       meta.listPath = result.apiPath
+    expandedFieldKeys.value = []
     parseMessage.value = result.mode === 'openapi-schema'
       ? `已从 ${result.sourcePath} 解析出 ${result.responseParamCount || 0} 个响应字段、${result.queryParamCount || 0} 个查询参数`
       : `已从 ${result.sourcePath} 解析出 ${paramsList.value.length} 个字段`
@@ -82,7 +84,7 @@ function generatePrompts() {
 
   if (paramsList.value.length) {
     activeTab.value = 'prompts'
-    ElMessage.success('已生成五阶段提示词')
+    ElMessage.success('已生成四阶段提示词')
   }
 }
 
@@ -160,6 +162,21 @@ function ensureDateRangeConfig(field: ParamField) {
   if (field.query.widget === 'el-date-picker')
     field.query.operator = 'between'
 }
+
+function getFieldRowKey(row: ParamField) {
+  return row.field
+}
+
+function handleFieldExpandChange(_row: ParamField, expandedRows: ParamField[]) {
+  expandedFieldKeys.value = expandedRows.map(item => item.field)
+}
+
+function toggleAllFieldRows() {
+  expandedFieldKeys.value = allFieldRowsExpanded.value
+    ? []
+    : paramsList.value.map(item => item.field)
+}
+
 </script>
 
 <template>
@@ -170,7 +187,7 @@ function ensureDateRangeConfig(field: ParamField) {
           Fast-Builder
         </div>
         <h1 class="m-0 text-2xl font-800 md:text-3xl">
-          RuoYi CRUD 五阶段提示词生成器
+          RuoYi CRUD 四阶段提示词生成器
         </h1>
       </div>
       <el-button type="primary" :icon="MagicStick" @click="generatePrompts">
@@ -263,10 +280,7 @@ function ensureDateRangeConfig(field: ParamField) {
           按钮权限配置
         </el-divider>
 
-        <el-form label-position="top" class="grid grid-cols-1 gap-x-3 md:grid-cols-2 xl:grid-cols-5">
-          <el-form-item label="详情权限">
-            <el-input v-model="meta.permissionConfig.detail" placeholder="如 system:customer:query" />
-          </el-form-item>
+        <el-form label-position="top" class="grid grid-cols-1 gap-x-3 md:grid-cols-2 xl:grid-cols-4">
           <el-form-item label="新增权限">
             <el-input v-model="meta.permissionConfig.add" placeholder="如 system:customer:add" />
           </el-form-item>
@@ -284,9 +298,12 @@ function ensureDateRangeConfig(field: ParamField) {
         <el-tabs v-model="activeTab">
           <el-tab-pane label="字段池 paramsList" name="fields">
             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <span class="text-sm text-slate-500">横向表格保留完整总览，也可以在弹窗中集中配置单个字段。</span>
+              <span class="text-sm text-slate-500">主表保留核心字段，展开行中按配置类别填写更多内容。</span>
               <div class="flex flex-wrap items-center gap-2">
                 <el-switch v-model="meta.exportConfig.enabled" active-text="支持导出" inactive-text="不导出" />
+                <el-button plain :disabled="!paramsList.length" @click="toggleAllFieldRows">
+                  {{ allFieldRowsExpanded ? '折叠全部' : '展开全部' }}
+                </el-button>
                 <el-button type="primary" plain :icon="Setting" @click="openFieldDialog()">
                   字段配置弹窗
                 </el-button>
@@ -301,156 +318,142 @@ function ensureDateRangeConfig(field: ParamField) {
                 <el-input v-model="meta.exportConfig.fileName" placeholder="如 客户" />
               </el-form-item>
             </el-form>
-            <el-table :data="paramsList" border>
-              <el-table-column label="是否需要" width="92" align="center" fixed>
+            <el-table :data="paramsList" border :row-key="getFieldRowKey" :expand-row-keys="expandedFieldKeys"
+              @expand-change="handleFieldExpandChange">
+              <el-table-column type="expand" align="center">
+                <template #default="{ row }">
+                  <div class="field-expand-panel">
+                    <el-descriptions title="公共字段内容" :column="3" border>
+                      <el-descriptions-item label="是否关联字典">
+                        <el-switch v-model="row.selectSource" :disabled="!row.enabled" active-value="dict"
+                          inactive-value="remark" active-text="是" inactive-text="否" />
+                      </el-descriptions-item>
+                      <el-descriptions-item v-if="row.selectSource === 'dict'" label="字典类型">
+                        <el-input v-model="row.dictType" :disabled="!row.enabled"
+                          placeholder="如 sys_normal_disable" />
+                      </el-descriptions-item>
+                      <el-descriptions-item label="备注">
+                        <el-input v-model="row.enumRemark" :disabled="!row.enabled"
+                          placeholder="如 0是，1否" />
+                      </el-descriptions-item>
+                    </el-descriptions>
+
+                    <el-descriptions v-if="row.query.enabled" title="展示、查询设置" :column="3" border>
+                      <el-descriptions-item label="展示位置">
+                        <el-select v-model="row.displayTarget" :disabled="!row.enabled" class="w-full">
+                          <el-option label="主表格" value="table" />
+                          <el-option label="展开行" value="expand" />
+                          <el-option label="不展示" value="none" />
+                        </el-select>
+                      </el-descriptions-item>
+                      <el-descriptions-item label="查询控件">
+                        <el-select v-model="row.query.widget" :disabled="!row.enabled" class="w-full"
+                          @change="ensureDateRangeConfig(row)">
+                          <el-option label="el-input" value="el-input" />
+                          <el-option label="el-select" value="el-select" />
+                          <el-option label="el-date-picker" value="el-date-picker" />
+                          <el-option label="el-switch" value="el-switch" />
+                        </el-select>
+                      </el-descriptions-item>
+                      <el-descriptions-item label="范围查询开关">
+                        <el-switch v-model="normalizeField(row).query.dateRange.enabled"
+                          :disabled="!row.enabled || row.query.widget !== 'el-date-picker'" active-text="开启"
+                          inactive-text="关闭" @change="ensureDateRangeConfig(row)" />
+                      </el-descriptions-item>
+                      <el-descriptions-item v-if="normalizeField(row).query.dateRange.enabled" label="范围参数">
+                        <span class="text-xs text-slate-600">
+                          {{ row.query.dateRange.paramCount === 1 ? row.query.dateRange.beginParam
+                            : `${row.query.dateRange.beginParam} / ${row.query.dateRange.endParam}` }}
+                        </span>
+                      </el-descriptions-item>
+                      <el-descriptions-item label="展示形式">
+                        <el-select v-if="row.displayTarget === 'table'" v-model="row.table.display"
+                          :disabled="!row.enabled" class="w-full">
+                          <el-option label="text" value="text" />
+                          <el-option label="image-preview" value="image-preview" />
+                          <el-option label="dict-tag" value="dict-tag" />
+                          <el-option label="el-tag" value="el-tag" />
+                          <el-option label="date-format" value="date-format" />
+                        </el-select>
+                        <el-select v-else-if="row.displayTarget === 'expand'" v-model="row.expand.display"
+                          :disabled="!row.enabled || row.expand.mode !== 'description'" class="w-full">
+                          <el-option label="text" value="text" />
+                          <el-option label="image-preview" value="image-preview" />
+                          <el-option label="dict-tag" value="dict-tag" />
+                          <el-option label="el-tag" value="el-tag" />
+                          <el-option label="date-format" value="date-format" />
+                        </el-select>
+                        <span v-else class="text-xs text-slate-400">-</span>
+                      </el-descriptions-item>
+                      <el-descriptions-item v-if="row.displayTarget === 'expand'" label="展开模式">
+                        <el-select v-model="row.expand.mode" :disabled="!row.enabled" class="w-full">
+                          <el-option label="描述项" value="description" />
+                          <el-option label="子表格" value="table" />
+                        </el-select>
+                      </el-descriptions-item>
+                    </el-descriptions>
+
+                    <el-descriptions v-if="row.form.enabled" title="添加/编辑弹窗设置" :column="3" border>
+                      <el-descriptions-item label="表单控件">
+                        <el-select v-model="row.form.widget" :disabled="!row.enabled" class="w-full"
+                          @change="ensureFormWidgetConfig(row)">
+                          <el-option label="el-input" value="el-input" />
+                          <el-option label="el-textarea" value="el-textarea" />
+                          <el-option label="el-input-number" value="el-input-number" />
+                          <el-option label="el-select" value="el-select" />
+                          <el-option label="el-select 多选" value="el-select-multiple" />
+                          <el-option label="el-radio" value="el-radio" />
+                          <el-option label="el-date-picker" value="el-date-picker" />
+                          <el-option label="el-switch" value="el-switch" />
+                          <el-option label="ImageUpload" value="image-upload" />
+                        </el-select>
+                      </el-descriptions-item>
+                      <el-descriptions-item v-if="row.form.widget === 'image-upload'" label="上传张数">
+                        <el-input-number v-model="row.form.uploadLimit" :min="1" :max="20"
+                          controls-position="right" :disabled="!row.enabled" class="w-full" />
+                      </el-descriptions-item>
+                      <el-descriptions-item label="必填">
+                        <el-switch v-model="row.form.required" :disabled="!row.enabled" />
+                      </el-descriptions-item>
+                    </el-descriptions>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="是否需要" align="center">
                 <template #default="{ row }">
                   <el-switch v-model="row.enabled" />
                 </template>
               </el-table-column>
-              <el-table-column label="字段" prop="field" min-width="140" fixed />
-              <el-table-column label="标题" min-width="150" fixed>
+              <el-table-column label="字段" prop="field"  align="center"/>
+              <el-table-column label="标题" align="center">
                 <template #default="{ row }">
-                  <el-input v-model="row.label" size="small" :disabled="!row.enabled" />
+                  <el-input v-model="row.label"  :disabled="!row.enabled" />
                 </template>
               </el-table-column>
-              <el-table-column label="类型" prop="type" width="110" />
-              <el-table-column label="展示位置" min-width="150">
+              <el-table-column label="类型" prop="type" align="center"/>
+              <el-table-column label="展示位置" align="center">
                 <template #default="{ row }">
-                  <el-select v-model="row.displayTarget" size="small" :disabled="!row.enabled">
+                  <el-select v-model="row.displayTarget"  :disabled="!row.enabled" class="w-full">
                     <el-option label="主表格" value="table" />
                     <el-option label="展开行" value="expand" />
                     <el-option label="不展示" value="none" />
                   </el-select>
                 </template>
               </el-table-column>
-              <el-table-column label="字典类型" min-width="180">
-                <template #default="{ row }">
-                  <el-input v-model="row.dictType" size="small" :disabled="!row.enabled"
-                    placeholder="如 sys_normal_disable" />
-                </template>
-              </el-table-column>
-              <el-table-column label="选项来源" min-width="130">
-                <template #default="{ row }">
-                  <el-select v-model="row.selectSource" size="small" :disabled="!row.enabled">
-                    <el-option label="关联字典" value="dict" />
-                    <el-option label="备注映射" value="remark" />
-                  </el-select>
-                </template>
-              </el-table-column>
-              <el-table-column label="备注映射" min-width="180">
-                <template #default="{ row }">
-                  <el-input v-model="row.enumRemark" size="small"
-                    :disabled="!row.enabled || row.selectSource !== 'remark'" placeholder="如 0是，1否" />
-                </template>
-              </el-table-column>
-              <el-table-column label="查询" width="76" align="center">
+              <el-table-column label="查询" align="center">
                 <template #default="{ row }">
                   <el-switch v-model="row.query.enabled" :disabled="!row.enabled" />
                 </template>
               </el-table-column>
-              <el-table-column label="查询控件" min-width="150">
-                <template #default="{ row }">
-                  <el-select v-model="row.query.widget" size="small" :disabled="!row.enabled"
-                    @change="ensureDateRangeConfig(row)">
-                    <el-option label="el-input" value="el-input" />
-                    <el-option label="el-select" value="el-select" />
-                    <el-option label="el-date-picker" value="el-date-picker" />
-                    <el-option label="el-switch" value="el-switch" />
-                  </el-select>
-                </template>
-              </el-table-column>
-              <el-table-column label="范围查询" width="92" align="center">
-                <template #default="{ row }">
-                  <el-switch v-model="normalizeField(row).query.dateRange.enabled"
-                    :disabled="!row.enabled || !row.query.enabled || row.query.widget !== 'el-date-picker'"
-                    @change="ensureDateRangeConfig(row)" />
-                </template>
-              </el-table-column>
-              <el-table-column label="范围参数" min-width="210">
-                <template #default="{ row }">
-                  <span v-if="normalizeField(row).query.dateRange.enabled" class="text-xs text-slate-600">
-                    {{ row.query.dateRange.paramCount === 1 ? row.query.dateRange.beginParam
-                      : `${row.query.dateRange.beginParam} / ${row.query.dateRange.endParam}` }}
-                  </span>
-                  <span v-else class="text-xs text-slate-400">-</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="主表展示" min-width="160">
-                <template #default="{ row }">
-                  <el-select v-model="row.table.display" size="small"
-                    :disabled="!row.enabled || row.displayTarget !== 'table'">
-                    <el-option label="text" value="text" />
-                    <el-option label="image-preview" value="image-preview" />
-                    <el-option label="dict-tag" value="dict-tag" />
-                    <el-option label="el-tag" value="el-tag" />
-                    <el-option label="date-format" value="date-format" />
-                  </el-select>
-                </template>
-              </el-table-column>
-              <el-table-column label="展开模式" min-width="140">
-                <template #default="{ row }">
-                  <el-select v-model="row.expand.mode" size="small"
-                    :disabled="!row.enabled || row.displayTarget !== 'expand'">
-                    <el-option label="描述项" value="description" />
-                    <el-option label="子表格" value="table" />
-                  </el-select>
-                </template>
-              </el-table-column>
-              <el-table-column label="展开展示" min-width="160">
-                <template #default="{ row }">
-                  <el-select v-model="row.expand.display" size="small"
-                    :disabled="!row.enabled || row.displayTarget !== 'expand' || row.expand.mode !== 'description'">
-                    <el-option label="text" value="text" />
-                    <el-option label="image-preview" value="image-preview" />
-                    <el-option label="dict-tag" value="dict-tag" />
-                    <el-option label="el-tag" value="el-tag" />
-                    <el-option label="date-format" value="date-format" />
-                  </el-select>
-                </template>
-              </el-table-column>
-              <el-table-column label="详情" width="76" align="center">
-                <template #default="{ row }">
-                  <el-switch v-model="row.detail.enabled" :disabled="!row.enabled" />
-                </template>
-              </el-table-column>
-              <el-table-column label="表单" width="76" align="center">
+              <el-table-column label="表单" align="center">
                 <template #default="{ row }">
                   <el-switch v-model="row.form.enabled" :disabled="!row.enabled" />
-                </template>
-              </el-table-column>
-              <el-table-column label="表单控件" min-width="150">
-                <template #default="{ row }">
-                  <el-select v-model="row.form.widget" size="small" :disabled="!row.enabled"
-                    @change="ensureFormWidgetConfig(row)">
-                    <el-option label="el-input" value="el-input" />
-                    <el-option label="el-textarea" value="el-textarea" />
-                    <el-option label="el-input-number" value="el-input-number" />
-                    <el-option label="el-select" value="el-select" />
-                    <el-option label="el-select 多选" value="el-select-multiple" />
-                    <el-option label="el-radio" value="el-radio" />
-                    <el-option label="el-date-picker" value="el-date-picker" />
-                    <el-option label="el-switch" value="el-switch" />
-                    <el-option label="ImageUpload" value="image-upload" />
-                  </el-select>
-                </template>
-              </el-table-column>
-              <el-table-column label="上传张数" width="110" align="center">
-                <template #default="{ row }">
-                  <el-input-number v-model="row.form.uploadLimit" size="small" :min="1" :max="20"
-                    controls-position="right"
-                    :disabled="!row.enabled || !row.form.enabled || row.form.widget !== 'image-upload'"
-                    class="w-full" />
-                </template>
-              </el-table-column>
-              <el-table-column label="必填" width="76" align="center">
-                <template #default="{ row }">
-                  <el-switch v-model="row.form.required" :disabled="!row.enabled" />
                 </template>
               </el-table-column>
             </el-table>
           </el-tab-pane>
 
-          <el-tab-pane label="五阶段提示词" name="prompts">
+          <el-tab-pane label="四阶段提示词" name="prompts">
             <el-tabs v-model="activeStep" tab-position="left" class="min-h-130">
               <el-tab-pane v-for="step in promptSteps" :key="step.key" :label="step.title" :name="step.key">
                 <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -466,7 +469,7 @@ function ensureDateRangeConfig(field: ParamField) {
 
           <el-tab-pane label="结构化 JSON" name="json">
             <div class="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <span class="text-sm text-slate-500">五份提示词共用的 BuilderConfig 数据</span>
+              <span class="text-sm text-slate-500">四份提示词共用的 BuilderConfig 数据</span>
               <el-button type="primary" plain :icon="CopyDocument" @click="copyText(configJson)">
                 复制 JSON
               </el-button>
@@ -634,14 +637,6 @@ function ensureDateRangeConfig(field: ParamField) {
 
         <section class="field-config-section">
           <div class="field-config-title">
-            <span>详情展示</span>
-            <el-switch v-model="editingField.detail.enabled" :disabled="!editingField.enabled" active-text="启用"
-              inactive-text="关闭" />
-          </div>
-        </section>
-
-        <section class="field-config-section">
-          <div class="field-config-title">
             <span>新增 / 修改表单</span>
             <el-switch v-model="editingField.form.enabled" :disabled="!editingField.enabled" active-text="启用"
               inactive-text="关闭" />
@@ -700,6 +695,13 @@ function ensureDateRangeConfig(field: ParamField) {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.field-expand-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 12px 10px;
 }
 
 .field-config-section {

@@ -218,7 +218,6 @@ function createQueryFields(operation: Record<string, unknown>, sourcePath: strin
       })
       fieldConfig.query.enabled = true
       fieldConfig.displayTarget = 'none'
-      fieldConfig.detail.enabled = false
       fieldConfig.form.enabled = false
       return fieldConfig
     })
@@ -340,7 +339,6 @@ export function buildConfig(meta: BuilderMeta, paramsList: ParamField[], expandC
       list: meta.listPath,
     },
     permissionConfig: {
-      detail: meta.permissionConfig.detail,
       add: meta.permissionConfig.add,
       edit: meta.permissionConfig.edit,
       remove: meta.permissionConfig.remove,
@@ -356,7 +354,6 @@ export function buildConfig(meta: BuilderMeta, paramsList: ParamField[], expandC
     queryFields: enabledFields.filter(item => item.query.enabled),
     tableColumns: enabledFields.filter(item => item.displayTarget === 'table'),
     expandFields,
-    detailFields: enabledFields.filter(item => item.detail.enabled),
     formFields: enabledFields.filter(item => item.form.enabled),
     deleteConfig: {
       primaryKey: meta.primaryKey || 'id',
@@ -381,26 +378,20 @@ export function generatePromptSteps(config: BuilderConfig): PromptStep[] {
       prompt: generatePrompt('step1_query_page', config),
     },
     {
-      key: 'step2_detail',
-      title: '第二次：表格行查看详情',
-      description: '只在已有列表页基础上新增行查看详情能力。',
-      prompt: generatePrompt('step2_detail', config),
-    },
-    {
       key: 'step3_form',
-      title: '第三次：新增 / 修改弹窗',
+      title: '第二次：新增 / 修改弹窗',
       description: '只在已有页面基础上新增和修改弹窗表单能力。',
       prompt: generatePrompt('step3_form', config),
     },
     {
       key: 'step4_delete',
-      title: '第四次：单条删除',
+      title: '第三次：单条删除',
       description: '只在已有页面基础上新增单条删除能力。',
       prompt: generatePrompt('step4_delete', config),
     },
     {
       key: 'step5_expand_row',
-      title: '第五次：展开行',
+      title: '第四次：展开行',
       description: '只在已有列表页基础上新增展开/折叠与展开行展示。',
       prompt: generatePrompt('step5_expand_row', config),
     },
@@ -468,9 +459,6 @@ function createParamField(field: string, type: FieldType, sample: unknown, sourc
     table: {
       enabled: true,
       display: defaultDisplay(type, field),
-    },
-    detail: {
-      enabled: true,
     },
     form: {
       enabled: !isReadonlyField(field),
@@ -632,19 +620,7 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         'handleExport 按 orderList/index.vue 风格实现：复制 queryParams.value 为 subData，删除 subData.pageNum 和 subData.pageSize，再调用 proxy?.download(exportConfig.url, { ...subData }, `${exportConfig.fileName}_${new Date().getTime()}.xlsx`)。',
         '导出范围是分页表格全部字段，不是只导出当前页；如果存在日期范围查询，导出参数也要沿用列表查询的日期范围参数处理方式。',
         'exportConfig.enabled 为 false 时，不生成导出按钮和 handleExport。',
-        '表格操作列只预留本步骤需要的结构，不实现详情、新增修改、删除逻辑。',
-      ],
-    },
-    step2_detail: {
-      only: '只生成“表格行查看详情”代码。',
-      details: [
-        '在已有分页列表页基础上增加行内“详情/查看”按钮。',
-        '详情/查看按钮使用 permissionConfig.detail，并按目标项目相邻页面的权限指令风格生成。',
-        '使用 apiNames.detail 获取单条详情。',
-        '按 detailFields 展示详情弹窗内容；ignoredFields 不展示。',
-        '字典或枚举字段展示时，统一读取字段级 selectSource、dictType、enumRemark。',
-        '复用若依项目已有弹窗、描述列表或 el-form 只读展示风格。',
-        '不要实现新增、修改、删除。',
+        '表格操作列只预留本步骤需要的结构，不实现查看详情、新增修改、删除逻辑。',
       ],
     },
     step3_form: {
@@ -652,7 +628,7 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
       details: [
         '在已有页面基础上增加新增按钮、修改按钮、表单弹窗、表单校验、提交逻辑。',
         '新增按钮使用 permissionConfig.add；修改按钮使用 permissionConfig.edit；权限指令写法必须参考目标项目相邻页面。',
-        '新增使用 apiNames.add，修改使用 apiNames.update，编辑回显使用 apiNames.detail。',
+        '新增使用 apiNames.add，修改使用 apiNames.update；编辑回显使用 apiNames.detail 或相邻页面已有获取详情写法，但不要生成查看详情按钮或详情弹窗。',
         '按 formFields 生成表单项，并遵守字段 required 配置；ignoredFields 不生成。',
         '表单控件支持 el-input、el-textarea、el-input-number、el-select、el-select-multiple、el-radio、el-date-picker、el-switch、image-upload。',
         'form.widget 为 el-input-number 时，生成 ElementPlus 数字输入框 <el-input-number v-model="form.field" controls-position="right" />；字段名包含 sort 的排序字段（如 sort、sortOrder、sortNo、displaySort）必须使用 el-input-number，不要使用普通 el-input。',
@@ -661,7 +637,7 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         'form.widget 为 image-upload 时，使用若依项目已封装的 ImageUpload 组件；字段值按 ossId 处理，直接传入即可；上传数量上限使用 form.uploadLimit。',
         'selectSource 为 dict 时使用 dictType 关联若依字典；为 remark 时根据 enumRemark 生成静态选项或保留映射说明。',
         '提交成功后关闭弹窗、提示成功并刷新列表。',
-        '不要实现删除，不要改动已完成的详情逻辑。',
+        '不要实现删除，不要生成查看详情按钮或详情弹窗。',
       ],
     },
     step4_delete: {
@@ -673,7 +649,7 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '使用 deleteConfig.confirmText 作为确认文案。',
         '调用 apiNames.remove 完成删除。',
         '删除成功后按 deleteConfig.refreshAfterDelete 刷新列表并提示成功。',
-        '不要新增批量删除，不要改动新增修改或详情逻辑。',
+        '不要新增批量删除，不要改动新增修改逻辑，不要生成查看详情按钮或详情弹窗。',
       ],
     },
     step5_expand_row: {
@@ -690,7 +666,7 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         'expandFields 中 expand.mode 为 description 的字段，统一生成 <el-descriptions>，column 使用 expandConfig.descriptionColumn。',
         'el-descriptions 保持 label-width="120"，样式保持 margin-top: 10px; padding: 0 10px;。',
         '如果 expandFields 为空，本步骤不要生成展开行。',
-        '不要实现新增、修改、删除、详情弹窗，不要重写已有列表查询逻辑。',
+        '不要实现新增、修改、删除、查看详情弹窗，不要重写已有列表查询逻辑。',
       ],
     },
   }

@@ -3,12 +3,11 @@ export type QueryWidget = 'el-input' | 'el-select' | 'el-date-picker' | 'el-swit
 export type FormWidget = QueryWidget | 'el-textarea' | 'el-input-number' | 'el-select-multiple' | 'el-radio' | 'image-upload'
 export type TableDisplay = 'text' | 'image-preview' | 'dict-tag' | 'el-tag' | 'date-format'
 export type SelectSource = 'dict' | 'remark'
-export type PromptStepKey = 'step1_query_page' | 'step2_detail' | 'step3_form' | 'step4_delete' | 'step5_expand_row'
+export type PromptStepKey = 'step1_query_page' | 'step3_form' | 'step4_delete' | 'step5_expand_row'
 export type DisplayTarget = 'table' | 'expand' | 'none'
 export type ExpandMode = 'description' | 'table'
 
 export interface PermissionConfig {
-  detail: string
   add: string
   edit: string
   remove: string
@@ -47,9 +46,6 @@ export interface ParamField {
   table: {
     enabled: boolean
     display: TableDisplay
-  }
-  detail: {
-    enabled: boolean
   }
   form: {
     enabled: boolean
@@ -98,7 +94,6 @@ export interface BuilderConfig {
   queryFields: ParamField[]
   tableColumns: ParamField[]
   expandFields: ParamField[]
-  detailFields: ParamField[]
   formFields: ParamField[]
   deleteConfig: {
     primaryKey: string

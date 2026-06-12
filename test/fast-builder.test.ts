@@ -14,7 +14,6 @@ function createMeta(): BuilderMeta {
     removeApi: '',
     primaryKey: 'id',
     permissionConfig: {
-      detail: '',
       add: '',
       edit: '',
       remove: '',
@@ -29,6 +28,27 @@ function createMeta(): BuilderMeta {
 }
 
 describe('fast-builder sort fields', () => {
+  it('generates four prompt steps without detail step', () => {
+    const result = parseApiFoxJson(JSON.stringify({
+      rows: [
+        {
+          id: 1,
+          name: '分类',
+        },
+      ],
+    }))
+    const config = buildConfig(createMeta(), result.paramsList, createDefaultExpandConfig())
+    const steps = generatePromptSteps(config)
+
+    expect(steps.map(item => item.key)).toEqual([
+      'step1_query_page',
+      'step3_form',
+      'step4_delete',
+      'step5_expand_row',
+    ])
+    expect(config.apiNames.detail).toBe('getData')
+  })
+
   it('includes default create time sorting guidance in generated query prompt', () => {
     const result = parseApiFoxJson(JSON.stringify({
       rows: [
