@@ -189,7 +189,7 @@ function createFieldsFromSchema(schema: unknown, sourcePath: string) {
   if (!isRecord(properties))
     return []
 
-  const orders = Array.isArray(resolved['x-apifox-orders']) ? resolved['x-apifox-orders'].filter((item): item is string => typeof item === 'string') : []
+  const orders = Array.isArray(resolved?.['x-apifox-orders']) ? resolved['x-apifox-orders'].filter((item): item is string => typeof item === 'string') : []
   const fieldNames = orders.length ? orders.filter(field => field in properties) : Object.keys(properties)
 
   return fieldNames.map((field) => {
@@ -474,7 +474,7 @@ function createParamField(field: string, type: FieldType, sample: unknown, sourc
     },
     form: {
       enabled: !isReadonlyField(field),
-      widget: defaultFormWidget(type),
+      widget: defaultFormWidget(type, field),
       required: false,
       uploadLimit: type === 'image' ? 1 : 0,
     },
@@ -540,9 +540,11 @@ function defaultDateRangeModel(field: string) {
   return `${field}Range`
 }
 
-function defaultFormWidget(type: FieldType): FormWidget {
+function defaultFormWidget(type: FieldType, field = ''): FormWidget {
   if (type === 'image')
     return 'image-upload'
+  if (isSortField(field))
+    return 'el-input-number'
   return defaultWidget(type)
 }
 
@@ -554,6 +556,10 @@ function defaultDisplay(type: FieldType, field: string): TableDisplay {
   if (/(status|type|sex|flag)/i.test(field))
     return 'dict-tag'
   return 'text'
+}
+
+function isSortField(field: string) {
+  return /sort/i.test(field)
 }
 
 function inferExpandTableColumns(sample: unknown) {
@@ -647,7 +653,8 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '新增按钮使用 permissionConfig.add；修改按钮使用 permissionConfig.edit；权限指令写法必须参考目标项目相邻页面。',
         '新增使用 apiNames.add，修改使用 apiNames.update，编辑回显使用 apiNames.detail。',
         '按 formFields 生成表单项，并遵守字段 required 配置；ignoredFields 不生成。',
-        '表单控件支持 el-input、el-textarea、el-select、el-select-multiple、el-radio、el-date-picker、el-switch、image-upload。',
+        '表单控件支持 el-input、el-textarea、el-input-number、el-select、el-select-multiple、el-radio、el-date-picker、el-switch、image-upload。',
+        'form.widget 为 el-input-number 时，生成 ElementPlus 数字输入框 <el-input-number v-model="form.field" controls-position="right" />；字段名包含 sort 的排序字段（如 sort、sortOrder、sortNo、displaySort）必须使用 el-input-number，不要使用普通 el-input。',
         'form.widget 为 el-select、el-select-multiple、el-radio 时，统一读取字段级 selectSource、dictType、enumRemark。',
         'el-select-multiple 使用多选下拉写法，el-radio 使用单选 radio 组写法；选项来源规则和 el-select 完全一致。',
         'form.widget 为 image-upload 时，使用若依项目已封装的 ImageUpload 组件；字段值按 ossId 处理，直接传入即可；上传数量上限使用 form.uploadLimit。',

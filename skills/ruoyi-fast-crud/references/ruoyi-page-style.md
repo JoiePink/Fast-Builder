@@ -28,6 +28,7 @@
 - 如果附近页面使用同一个弹窗处理新增/修改，保持这个习惯。
 - 复用本地的 form ref、rules、reset、submit、成功提示、刷新列表写法。
 - `el-select`、`el-select-multiple`、`el-radio` 的选项来源都使用字段级 `selectSource`、`dictType`、`enumRemark`，不要重复定义第二套字典配置。
+- 字段名包含 sort 的排序字段（如 `sort`、`sortOrder`、`sortNo`、`displaySort`）在新增 / 修改表单中使用 `el-input-number`，保持 `controls-position="right"`。
 - 图片上传字段使用项目已封装的 `ImageUpload` 组件，按 `ossId` 字段值传入，并遵守 `form.uploadLimit`。
 - 提交成功后关闭弹窗并刷新列表。
 - 不要在本阶段实现删除。

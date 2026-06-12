@@ -45,7 +45,6 @@ const enabledFields = computed(() => paramsList.value.filter(item => item.enable
 const builderConfig = computed(() => buildConfig(meta, paramsList.value, expandConfig))
 const configJson = computed(() => JSON.stringify(builderConfig.value, null, 2))
 const promptSteps = computed(() => generatePromptSteps(builderConfig.value))
-const fieldsTableHeight = computed(() => sourcePanelCollapsed.value ? 'calc(100vh - 360px)' : 520)
 
 function handleParse() {
   if (!rawJson.value.trim()) {
@@ -425,6 +424,7 @@ function ensureDateRangeConfig(field: ParamField) {
                     @change="ensureFormWidgetConfig(row)">
                     <el-option label="el-input" value="el-input" />
                     <el-option label="el-textarea" value="el-textarea" />
+                    <el-option label="el-input-number" value="el-input-number" />
                     <el-option label="el-select" value="el-select" />
                     <el-option label="el-select 多选" value="el-select-multiple" />
                     <el-option label="el-radio" value="el-radio" />
@@ -653,6 +653,7 @@ function ensureDateRangeConfig(field: ParamField) {
                 @change="ensureFormWidgetConfig(editingField)">
                 <el-option label="el-input" value="el-input" />
                 <el-option label="el-textarea" value="el-textarea" />
+                <el-option label="el-input-number" value="el-input-number" />
                 <el-option label="el-select" value="el-select" />
                 <el-option label="el-select 多选" value="el-select-multiple" />
                 <el-option label="el-radio" value="el-radio" />
