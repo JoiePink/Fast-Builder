@@ -36,6 +36,7 @@ Fast-Builder 会输出一份共享的 `BuilderConfig`、四份分阶段提示词
 - `tableColumns`：主表格字段。
 - `expandFields`：展开行字段。
 - 字段展示形式为 `el-tag` 时，主表格使用 `table.tagType`，展开行使用 `expand.tagType` 作为 `<el-tag>` 的 `type`；缺省值为 `primary`。
+- 字段展示形式为 `el-rate` 时，使用 `el-tooltip` 包裹 disabled 的 `el-rate`，保留 `allow-half`、`rate-tooltip-wrap`，空值显示 `-`，并生成 `hasScore(value)` / `formatScore(value)` 工具函数。
 - `formFields`：新增 / 修改表单字段。
   - `form.widget` 支持 `el-input`、`el-textarea`、`el-input-number`、`el-select`、`el-select-multiple`、`el-radio`、`el-date-picker`、`el-switch`、`image-upload`。
   - `form.widget = el-input-number` 时，生成 ElementPlus 数字输入框；字段名包含 sort 的排序字段（如 `sort`、`sortOrder`、`sortNo`、`displaySort`）必须使用 `el-input-number`，不要使用普通 `el-input`。

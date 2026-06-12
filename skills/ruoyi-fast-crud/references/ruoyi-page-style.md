@@ -11,6 +11,7 @@
 - 使用项目已有分页组件和 `right-toolbar` 写法。
 - 字典、图片预览、日期格式化、权限指令优先使用项目已有封装，例如 `dict-tag`、`image-preview`。
 - 主表格字段展示形式为 `el-tag` 时，使用配置里的 `table.tagType` 作为 `<el-tag>` 的 `type`；缺省为 `primary`。
+- 主表格字段展示形式为 `el-rate` 时，按 `<el-tooltip v-if="hasScore(value)" :content="formatScore(value)" placement="top"><span class="rate-tooltip-wrap"><el-rate :model-value="Number(value)" allow-half disabled /></span></el-tooltip><span v-else>-</span>` 的结构生成。
 - 查询、重置按钮默认不加权限；`exportConfig.enabled = true` 时，导出按钮使用 `permissionConfig.export`。
 - 导出保持 `order/orderList/index.vue` 风格：按钮使用 `type="warning"`、`plain`、`icon="Download"`、`@click="handleExport"`；`handleExport` 复制 `queryParams.value`，删除 `pageNum` / `pageSize`，再调用 `proxy?.download(exportConfig.url, { ...subData }, 文件名)`。
 - 导出是导出分页表格全部字段，不是只导出当前页；如果查询条件里有日期范围，导出参数也要沿用同样的日期范围参数处理方式。
@@ -64,5 +65,6 @@
 - 展开行只使用 `el-descriptions`，不要生成展开子表格或嵌套 `el-table`。
 - 按 `expandConfig.groups` 生成一个或多个描述项组合；`group.title` 有值时作为标题，没有值时不传标题。
 - `group.fields` 控制每个组合中展示哪些展开字段；字段展示形式继续读取 `expandFields` 中对应字段的 `expand.display`，其中 `el-tag` 使用 `expand.tagType` 作为 `<el-tag>` 的 `type`。
+- 展开字段展示形式为 `el-rate` 时，同样使用 `el-tooltip + el-rate disabled`，有值显示评分并在 tooltip 中展示 `formatScore(value)`，无值显示 `-`。
 - 每个 `<el-descriptions>` 的列数使用 `expandConfig.descriptionColumn`。
 - 描述列表默认保持 `label-width="120"` 和 `style="margin-top: 10px; padding: 0 10px;"`，除非目标项目附近页面有不同风格。

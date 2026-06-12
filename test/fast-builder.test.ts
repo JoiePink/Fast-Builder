@@ -244,6 +244,30 @@ describe('fast-builder sort fields', () => {
     expect(expandPrompt).toContain('expand.tagType')
   })
 
+  it('keeps el-rate display config and guidance in generated prompt', () => {
+    const result = parseApiFoxJson(JSON.stringify({
+      rows: [
+        {
+          id: 1,
+          satScore: 4.5,
+        },
+      ],
+    }))
+    const scoreField = result.paramsList.find(item => item.field === 'satScore')
+
+    if (scoreField)
+      scoreField.table.display = 'el-rate'
+
+    const config = buildConfig(createMeta(), result.paramsList, createDefaultExpandConfig())
+    const queryPrompt = generatePromptSteps(config).find(item => item.key === 'step1_query_page')?.prompt
+
+    expect(config.tableColumns.find(item => item.field === 'satScore')?.table.display).toBe('el-rate')
+    expect(queryPrompt).toContain('el-rate')
+    expect(queryPrompt).toContain('rate-tooltip-wrap')
+    expect(queryPrompt).toContain('hasScore(value)')
+    expect(queryPrompt).toContain('formatScore(value)')
+  })
+
   it('parses request body schema as table operation config', () => {
     const result = parseApiFoxJson(`
 \`\`\`yaml

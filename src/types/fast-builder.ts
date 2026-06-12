@@ -1,7 +1,7 @@
 export type FieldType = 'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'image' | 'url' | 'array' | 'object' | 'unknown'
 export type QueryWidget = 'el-input' | 'el-select' | 'el-date-picker' | 'el-switch'
 export type FormWidget = QueryWidget | 'el-textarea' | 'el-input-number' | 'el-select-multiple' | 'el-radio' | 'image-upload'
-export type TableDisplay = 'text' | 'image-preview' | 'dict-tag' | 'el-tag' | 'date-format'
+export type TableDisplay = 'text' | 'image-preview' | 'dict-tag' | 'el-tag' | 'el-rate' | 'date-format'
 export type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 export type SelectSource = 'dict' | 'remark'
 export type PromptStepKey = 'step1_query_page' | 'step3_form' | 'step4_delete' | 'step5_expand_row'

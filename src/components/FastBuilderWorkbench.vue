@@ -476,6 +476,7 @@ function removeExpandGroup(index: number) {
                           <el-option label="image-preview" value="image-preview" />
                           <el-option label="dict-tag" value="dict-tag" />
                           <el-option label="el-tag" value="el-tag" />
+                          <el-option label="el-rate" value="el-rate" />
                           <el-option label="date-format" value="date-format" />
                         </el-select>
                         <el-select v-else-if="row.displayTarget === 'expand'" v-model="row.expand.display"
@@ -484,6 +485,7 @@ function removeExpandGroup(index: number) {
                           <el-option label="image-preview" value="image-preview" />
                           <el-option label="dict-tag" value="dict-tag" />
                           <el-option label="el-tag" value="el-tag" />
+                          <el-option label="el-rate" value="el-rate" />
                           <el-option label="date-format" value="date-format" />
                         </el-select>
                         <span v-else class="text-xs text-slate-400">-</span>
@@ -596,6 +598,7 @@ function removeExpandGroup(index: number) {
                                     <el-option label="image-preview" value="image-preview" />
                                     <el-option label="dict-tag" value="dict-tag" />
                                     <el-option label="el-tag" value="el-tag" />
+                                    <el-option label="el-rate" value="el-rate" />
                                     <el-option label="date-format" value="date-format" />
                                   </el-select>
                                   <el-select v-else-if="child.displayTarget === 'expand'" v-model="child.expand.display"
@@ -604,6 +607,7 @@ function removeExpandGroup(index: number) {
                                     <el-option label="image-preview" value="image-preview" />
                                     <el-option label="dict-tag" value="dict-tag" />
                                     <el-option label="el-tag" value="el-tag" />
+                                    <el-option label="el-rate" value="el-rate" />
                                     <el-option label="date-format" value="date-format" />
                                   </el-select>
                                   <span v-else class="text-xs text-slate-400">-</span>
