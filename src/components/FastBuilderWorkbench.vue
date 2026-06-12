@@ -436,7 +436,7 @@ function removeExpandGroup(index: number) {
                       </el-descriptions-item>
                     </el-descriptions>
 
-                    <el-descriptions v-if="row.query.enabled" title="展示、查询设置" :column="3" border>
+                    <el-descriptions title="展示、查询设置" :column="3" border>
                       <el-descriptions-item label="展示位置">
                         <el-select v-model="row.displayTarget" :disabled="!row.enabled" class="w-full">
                           <el-option label="主表格" value="table" />
@@ -444,7 +444,7 @@ function removeExpandGroup(index: number) {
                           <el-option label="不展示" value="none" />
                         </el-select>
                       </el-descriptions-item>
-                      <el-descriptions-item label="查询控件">
+                      <el-descriptions-item v-if="row.query.enabled" label="查询控件">
                         <el-select v-model="row.query.widget" :disabled="!row.enabled" class="w-full"
                           @change="ensureDateRangeConfig(row)">
                           <el-option label="el-input" value="el-input" />
@@ -453,12 +453,12 @@ function removeExpandGroup(index: number) {
                           <el-option label="el-switch" value="el-switch" />
                         </el-select>
                       </el-descriptions-item>
-                      <el-descriptions-item label="范围查询开关">
+                      <el-descriptions-item v-if="row.query.enabled" label="范围查询开关">
                         <el-switch v-model="normalizeField(row).query.dateRange.enabled"
                           :disabled="!row.enabled || row.query.widget !== 'el-date-picker'" active-text="开启"
                           inactive-text="关闭" @change="ensureDateRangeConfig(row)" />
                       </el-descriptions-item>
-                      <el-descriptions-item v-if="normalizeField(row).query.dateRange.enabled" label="范围参数">
+                      <el-descriptions-item v-if="row.query.enabled && normalizeField(row).query.dateRange.enabled" label="范围参数">
                         <span class="text-xs text-slate-600">
                           {{ row.query.dateRange.paramCount === 1 ? row.query.dateRange.beginParam
                             : `${row.query.dateRange.beginParam} / ${row.query.dateRange.endParam}` }}
@@ -532,7 +532,7 @@ function removeExpandGroup(index: number) {
                                 </el-descriptions-item>
                               </el-descriptions>
 
-                              <el-descriptions v-if="child.query.enabled" title="展示、查询设置" :column="3" border>
+                              <el-descriptions title="展示、查询设置" :column="3" border>
                                 <el-descriptions-item label="展示位置">
                                   <el-select v-model="child.displayTarget" :disabled="!child.enabled" class="w-full">
                                     <el-option label="主表格" value="table" />
@@ -540,7 +540,7 @@ function removeExpandGroup(index: number) {
                                     <el-option label="不展示" value="none" />
                                   </el-select>
                                 </el-descriptions-item>
-                                <el-descriptions-item label="查询控件">
+                                <el-descriptions-item v-if="child.query.enabled" label="查询控件">
                                   <el-select v-model="child.query.widget" :disabled="!child.enabled" class="w-full"
                                     @change="ensureDateRangeConfig(child)">
                                     <el-option label="el-input" value="el-input" />
@@ -549,12 +549,12 @@ function removeExpandGroup(index: number) {
                                     <el-option label="el-switch" value="el-switch" />
                                   </el-select>
                                 </el-descriptions-item>
-                                <el-descriptions-item label="范围查询开关">
+                                <el-descriptions-item v-if="child.query.enabled" label="范围查询开关">
                                   <el-switch v-model="normalizeField(child).query.dateRange.enabled"
                                     :disabled="!child.enabled || child.query.widget !== 'el-date-picker'"
                                     active-text="开启" inactive-text="关闭" @change="ensureDateRangeConfig(child)" />
                                 </el-descriptions-item>
-                                <el-descriptions-item v-if="normalizeField(child).query.dateRange.enabled" label="范围参数">
+                                <el-descriptions-item v-if="child.query.enabled && normalizeField(child).query.dateRange.enabled" label="范围参数">
                                   <span class="text-xs text-slate-600">
                                     {{ child.query.dateRange.paramCount === 1 ? child.query.dateRange.beginParam
                                       : `${child.query.dateRange.beginParam} / ${child.query.dateRange.endParam}` }}
