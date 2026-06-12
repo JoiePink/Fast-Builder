@@ -6,6 +6,7 @@
 
 - 使用目标项目已有查询表单布局。
 - 如果项目附近页面使用 `queryParams`、`loading`、`total`、列表数据、`getList`、`handleQuery`、`resetQuery`，保持同名或同风格。
+- `queryParams` 默认必须包含 `orderByColumn: 'createTime'` 和 `isAsc: 'desc'`；分页查询、重置查询和导出参数都要保留这组默认排序，不要把 `orderByColumn`、`isAsc` 生成成查询表单控件。
 - 日期范围查询必须保持 `order/orderList/index.vue` 的公司内部写法：模板使用 `el-date-picker class="serarchInput"`、`type="daterange"`、`value-format="YYYY-MM-DD HH:mm:ss"`，脚本中使用 `dateRange = ref<any>(['', ''])` 这类范围变量，请求前通过 `proxy?.reconstructDateRange(queryParams.value, dateRange.value, 'createTimeBegin', 'createTimeEnd')` 生成真实参数，重置时清空范围变量。
 - 使用项目已有分页组件和 `right-toolbar` 写法。
 - 字典、图片预览、日期格式化、权限指令优先使用项目已有封装，例如 `dict-tag`、`image-preview`。

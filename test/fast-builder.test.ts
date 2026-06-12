@@ -29,6 +29,24 @@ function createMeta(): BuilderMeta {
 }
 
 describe('fast-builder sort fields', () => {
+  it('includes default create time sorting guidance in generated query prompt', () => {
+    const result = parseApiFoxJson(JSON.stringify({
+      rows: [
+        {
+          id: 1,
+          name: '分类',
+          createTime: '2026-06-06 00:00:00',
+        },
+      ],
+    }))
+    const config = buildConfig(createMeta(), result.paramsList, createDefaultExpandConfig())
+    const queryPrompt = generatePromptSteps(config).find(item => item.key === 'step1_query_page')?.prompt
+
+    expect(queryPrompt).toContain("orderByColumn: 'createTime'")
+    expect(queryPrompt).toContain("isAsc: 'desc'")
+    expect(queryPrompt).toContain('不要把 orderByColumn、isAsc 生成成查询表单控件')
+  })
+
   it('uses number input for sort fields parsed from response json', () => {
     const result = parseApiFoxJson(JSON.stringify({
       rows: [

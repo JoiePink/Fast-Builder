@@ -616,6 +616,7 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
       only: '只生成“条件查询 + 分页列表 + 可选导出”代码。',
       details: [
         '实现 queryParams、loading、total、列表数据、getList、handleQuery、resetQuery。',
+        'queryParams 默认必须包含排序参数：orderByColumn: \'createTime\'、isAsc: \'desc\'；分页查询、重置查询和导出参数都要保留这组默认排序，不要把 orderByColumn、isAsc 生成成查询表单控件。',
         '如果 apiPaths.list 有值，它来自 ApiFox/OpenAPI Schema 的列表接口地址，可作为核对接口来源的参考；页面代码仍优先使用 apiNames.list 对应的接口函数。',
         '按 queryFields 生成查询表单控件；el-select 字段统一读取字段级 selectSource、dictType、enumRemark。',
         'query.dateRange.enabled 为 true 时，查询表单按 tiansenrun-admin/src/views/order/orderList/index.vue 的创建时间风格生成日期范围：使用 query.dateRange.model 作为 ref<any>([\'\', \'\'])，el-date-picker 保持 class="serarchInput"、value-format="YYYY-MM-DD HH:mm:ss"、type="daterange"、range-separator="-"、start-placeholder="开始日期"、end-placeholder="结束日期"，不要把原字段直接放进 queryParams。',
