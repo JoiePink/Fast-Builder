@@ -5,7 +5,6 @@ export type TableDisplay = 'text' | 'image-preview' | 'dict-tag' | 'el-tag' | 'd
 export type SelectSource = 'dict' | 'remark'
 export type PromptStepKey = 'step1_query_page' | 'step3_form' | 'step4_delete' | 'step5_expand_row'
 export type DisplayTarget = 'table' | 'expand' | 'none'
-export type ExpandMode = 'description' | 'table'
 
 export interface PermissionConfig {
   add: string
@@ -54,9 +53,7 @@ export interface ParamField {
     uploadLimit: number
   }
   expand: {
-    mode: ExpandMode
     display: TableDisplay
-    tableColumns: ExpandTableColumn[]
   }
 }
 
@@ -119,22 +116,13 @@ export interface ParseResult {
   responseParamCount?: number
 }
 
-export interface ExpandTableColumn {
-  label: string
-  prop: string
-  display: TableDisplay
-}
-
-export interface ExpandDescriptionField {
-  label: string
-  prop: string
-  display: TableDisplay
+export interface ExpandGroup {
+  title: string
+  fields: string[]
 }
 
 export interface ExpandConfig {
   enabled: boolean
-  tableEnabled: boolean
-  descriptionEnabled: boolean
-  tableColumnCount: number
   descriptionColumn: number
+  groups: ExpandGroup[]
 }

@@ -1,5 +1,5 @@
 import { parse as parseYaml } from 'yaml'
-import type { BuilderConfig, BuilderMeta, ExpandConfig, FieldType, FormWidget, ParamField, PromptStep, PromptStepKey, QueryWidget, TableDisplay } from '~/types/fast-builder'
+import type { BuilderConfig, BuilderMeta, ExpandConfig, ExpandGroup, FieldType, FormWidget, ParamField, PromptStep, PromptStepKey, QueryWidget, TableDisplay } from '~/types/fast-builder'
 
 export function parseApiFoxJson(rawJson = '') {
   if (!rawJson.trim())
@@ -36,10 +36,8 @@ export function getDefaultPrimaryKey(paramsList: ParamField[]) {
 export function createDefaultExpandConfig(): ExpandConfig {
   return {
     enabled: false,
-    tableEnabled: false,
-    descriptionEnabled: false,
-    tableColumnCount: 4,
     descriptionColumn: 4,
+    groups: [],
   }
 }
 
@@ -324,6 +322,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function buildConfig(meta: BuilderMeta, paramsList: ParamField[], expandConfig = createDefaultExpandConfig()): BuilderConfig {
   const enabledFields = paramsList.filter(item => item.enabled)
   const expandFields = enabledFields.filter(item => item.displayTarget === 'expand')
+  const expandGroups = normalizeExpandGroups(expandConfig, expandFields)
 
   return {
     businessName: meta.businessName || '业务',
@@ -363,10 +362,30 @@ export function buildConfig(meta: BuilderMeta, paramsList: ParamField[], expandC
     expandConfig: {
       ...expandConfig,
       enabled: expandFields.length > 0,
-      tableEnabled: expandFields.some(item => item.expand.mode === 'table'),
-      descriptionEnabled: expandFields.some(item => item.expand.mode === 'description'),
+      groups: expandGroups,
     },
   }
+}
+
+function normalizeExpandGroups(expandConfig: ExpandConfig, expandFields: ParamField[]): ExpandGroup[] {
+  if (!expandFields.length)
+    return []
+
+  const fieldSet = new Set(expandFields.map(item => item.field))
+  const groups = (expandConfig.groups || [])
+    .map(group => ({
+      title: group.title || '',
+      fields: group.fields.filter(field => fieldSet.has(field)),
+    }))
+    .filter(group => group.fields.length > 0)
+
+  if (groups.length)
+    return groups
+
+  return [{
+    title: '',
+    fields: expandFields.map(item => item.field),
+  }]
 }
 
 export function generatePromptSteps(config: BuilderConfig): PromptStep[] {
@@ -467,9 +486,7 @@ function createParamField(field: string, type: FieldType, sample: unknown, sourc
       uploadLimit: type === 'image' ? 1 : 0,
     },
     expand: {
-      mode: type === 'array' ? 'table' : 'description',
       display: defaultDisplay(type, field),
-      tableColumns: inferExpandTableColumns(sample),
     },
   }
 }
@@ -548,21 +565,6 @@ function defaultDisplay(type: FieldType, field: string): TableDisplay {
 
 function isSortField(field: string) {
   return /sort/i.test(field)
-}
-
-function inferExpandTableColumns(sample: unknown) {
-  if (!Array.isArray(sample))
-    return []
-
-  const firstRow = sample.find(item => item && typeof item === 'object' && !Array.isArray(item)) as Record<string, unknown> | undefined
-  if (!firstRow)
-    return []
-
-  return Object.keys(firstRow).map(prop => ({
-    label: guessLabel(prop),
-    prop,
-    display: defaultDisplay(inferType(prop, firstRow[prop]), prop),
-  }))
 }
 
 function defaultQueryEnabled(field: string, type: FieldType) {
@@ -661,9 +663,10 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '展开/折叠按钮默认不加权限，保持 orderList/index.vue 风格。',
         '必须按项目示例实现 tableRef、tableExpand、toggleExpand，并对当前列表数据逐行 toggleRowExpansion。',
         '主表格需要支持 preserve-expanded-content、:default-expand-all="tableExpand"，并保留已有 loading、data、分页逻辑。',
-        'expandFields 中 expand.mode 为 table 的字段，按数组字段生成子表格：<el-table v-loading="loading" border :data="scope.row[field]">。',
-        '子表格列来自该字段的 expand.tableColumns；列数统一使用 expandConfig.tableColumnCount，列宽按 100 / tableColumnCount 等分。',
-        'expandFields 中 expand.mode 为 description 的字段，统一生成 <el-descriptions>，column 使用 expandConfig.descriptionColumn。',
+        '展开行只使用 el-descriptions，不要生成展开子表格或嵌套 el-table。',
+        '按 expandConfig.groups 生成一个或多个 el-descriptions；group.title 有值时作为 title，没有值时不传 title。',
+        '每个 group.fields 是该描述项组合包含的字段名列表；字段标题、展示形式、dictType 等仍然读取 expandFields 中对应字段的配置。',
+        '所有 el-descriptions 的 column 使用 expandConfig.descriptionColumn。',
         'el-descriptions 保持 label-width="120"，样式保持 margin-top: 10px; padding: 0 10px;。',
         '如果 expandFields 为空，本步骤不要生成展开行。',
         '不要实现新增、修改、删除、查看详情弹窗，不要重写已有列表查询逻辑。',

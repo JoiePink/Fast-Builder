@@ -100,4 +100,49 @@ describe('fast-builder sort fields', () => {
     expect(formPrompt).toContain('el-input-number')
     expect(formPrompt).toContain('orderNum')
   })
+
+  it('builds description-only expand groups', () => {
+    const result = parseApiFoxJson(JSON.stringify({
+      rows: [
+        {
+          id: 1,
+          name: '分类',
+          remark: '备注',
+        },
+      ],
+    }))
+    const nameField = result.paramsList.find(item => item.field === 'name')
+    const remarkField = result.paramsList.find(item => item.field === 'remark')
+
+    if (nameField)
+      nameField.displayTarget = 'expand'
+    if (remarkField)
+      remarkField.displayTarget = 'expand'
+
+    const expandConfig = createDefaultExpandConfig()
+    expandConfig.groups.push({
+      title: '基础信息',
+      fields: ['name', 'remark', 'missingField'],
+    })
+
+    const config = buildConfig(createMeta(), result.paramsList, expandConfig)
+    const expandPrompt = generatePromptSteps(config).find(item => item.key === 'step5_expand_row')?.prompt
+
+    expect(config.expandConfig).toMatchObject({
+      enabled: true,
+      descriptionColumn: 4,
+      groups: [
+        {
+          title: '基础信息',
+          fields: ['name', 'remark'],
+        },
+      ],
+    })
+    expect(config.expandFields[0].expand).not.toHaveProperty('mode')
+    expect(config.expandFields[0].expand).not.toHaveProperty('tableColumns')
+    expect(config.expandConfig).not.toHaveProperty('tableEnabled')
+    expect(expandPrompt).toContain('expandConfig.groups')
+    expect(expandPrompt).not.toContain('expand.mode')
+    expect(expandPrompt).not.toContain('expand.tableColumns')
+  })
 })

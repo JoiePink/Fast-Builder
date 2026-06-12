@@ -39,6 +39,8 @@ description: 根据 Fast-Builder 生成的四阶段提示词，在 RuoYi-Vue-Plu
 - 实现 `step1_query_page` 时，`queryParams` 默认必须包含 `orderByColumn: 'createTime'` 和 `isAsc: 'desc'`；分页查询、重置查询和导出参数都要保留这组默认排序，不要把 `orderByColumn`、`isAsc` 生成成查询表单控件。
 - 新增 / 修改表单中，字段名包含 sort 的排序字段（如 `sort`、`sortOrder`、`sortNo`、`displaySort`）必须使用 ElementPlus 数字输入框 `el-input-number`，不要使用普通 `el-input`。
 - `tableColumns` 和 `expandFields` 是互斥的展示结果，同一个字段不要同时生成到主表格和展开行。
+- 展开行只使用 `el-descriptions`，不要生成展开子表格或嵌套 `el-table`。
+- `expandConfig.groups` 控制展开行中有几个描述项组合；每个组合的 `title` 可选，`fields` 是该组合包含的字段名列表。
 - 实现 `step5_expand_row` 时，工具栏按钮必须保持这个形态：
 
 ```vue

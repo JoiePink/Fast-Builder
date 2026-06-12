@@ -47,7 +47,8 @@
 
 - 添加或复用 `tableRef`、`tableExpand`、`toggleExpand`，让当前列表数据逐行调用 `toggleRowExpansion(row, tableExpand.value)`。
 - 主表格按项目风格支持 `preserve-expanded-content` 和 `:default-expand-all="tableExpand"`。
-- `expand.mode = table` 的字段生成展开子表格，数据来源是 `scope.row[field]`。
-- 子表格列来自 `field.expand.tableColumns`，用 `expandConfig.tableColumnCount` 计算等分列宽。
-- `expand.mode = description` 的字段统一放进一个 `<el-descriptions>`，列数使用 `expandConfig.descriptionColumn`。
+- 展开行只使用 `el-descriptions`，不要生成展开子表格或嵌套 `el-table`。
+- 按 `expandConfig.groups` 生成一个或多个描述项组合；`group.title` 有值时作为标题，没有值时不传标题。
+- `group.fields` 控制每个组合中展示哪些展开字段；字段展示形式继续读取 `expandFields` 中对应字段的 `expand.display`。
+- 每个 `<el-descriptions>` 的列数使用 `expandConfig.descriptionColumn`。
 - 描述列表默认保持 `label-width="120"` 和 `style="margin-top: 10px; padding: 0 10px;"`，除非目标项目附近页面有不同风格。
