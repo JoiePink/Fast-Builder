@@ -145,4 +145,124 @@ describe('fast-builder sort fields', () => {
     expect(expandPrompt).not.toContain('expand.mode')
     expect(expandPrompt).not.toContain('expand.tableColumns')
   })
+
+  it('parses object response fields and flattens children in generated config', () => {
+    const result = parseApiFoxJson(JSON.stringify({
+      openapi: '3.0.1',
+      paths: {
+        '/system/user/list': {
+          get: {
+            responses: {
+              200: {
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        rows: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              id: { type: 'integer', description: 'ID' },
+                              profile: {
+                                type: 'object',
+                                description: '用户资料',
+                                properties: {
+                                  nickName: { type: 'string', description: '昵称' },
+                                  avatar: { type: 'string', description: '头像' },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {},
+      },
+    }))
+
+    const profileField = result.paramsList.find(item => item.field === 'profile')
+    const nickNameField = profileField?.children.find(item => item.field === 'profile.nickName')
+
+    if (nickNameField)
+      nickNameField.displayTarget = 'expand'
+
+    const config = buildConfig(createMeta(), result.paramsList, createDefaultExpandConfig())
+
+    expect(profileField?.type).toBe('object')
+    expect(profileField?.children.map(item => item.field)).toEqual(['profile.nickName', 'profile.avatar'])
+    expect(config.paramsList.map(item => item.field)).toEqual(['id', 'profile.nickName', 'profile.avatar'])
+    expect(config.paramsList.some(item => item.field === 'profile')).toBe(false)
+    expect(config.expandFields.map(item => item.field)).toEqual(['profile.nickName'])
+    expect(generatePromptSteps(config).find(item => item.key === 'step5_expand_row')?.prompt).toContain('"field": "profile.nickName"')
+  })
+
+  it('parses request body schema as table operation config', () => {
+    const result = parseApiFoxJson(`
+\`\`\`yaml
+openapi: 3.0.1
+paths:
+  /admin/lawyerAuthentication/process/audit:
+    post:
+      summary: 审核认证
+      operationId: audit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessAuditCommand'
+      responses:
+        '200':
+          description: OK
+components:
+  schemas:
+    ProcessAuditCommand:
+      required:
+        - action
+        - id
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 主键
+        action:
+          type: integer
+          description: 10通过 20拒绝
+        auditOpinion:
+          type: string
+          description: 批注
+      x-apifox-orders:
+        - id
+        - action
+        - auditOpinion
+\`\`\`
+`)
+
+    expect(result.paramsList).toEqual([])
+    expect(result.operationConfig).toMatchObject({
+      enabled: true,
+      operationName: '审核认证',
+      apiName: 'audit',
+      apiPath: '/admin/lawyerAuthentication/process/audit',
+      method: 'post',
+    })
+    expect(result.operationConfig?.fields.map(item => ({
+      field: item.field,
+      required: item.required,
+      widget: item.widget,
+    }))).toEqual([
+      { field: 'id', required: true, widget: 'el-input-number' },
+      { field: 'action', required: true, widget: 'el-input-number' },
+      { field: 'auditOpinion', required: false, widget: 'el-input' },
+    ])
+  })
 })

@@ -5,6 +5,7 @@ export type TableDisplay = 'text' | 'image-preview' | 'dict-tag' | 'el-tag' | 'd
 export type SelectSource = 'dict' | 'remark'
 export type PromptStepKey = 'step1_query_page' | 'step3_form' | 'step4_delete' | 'step5_expand_row'
 export type DisplayTarget = 'table' | 'expand' | 'none'
+export type OperationFieldWidget = FormWidget
 
 export interface PermissionConfig {
   add: string
@@ -22,6 +23,8 @@ export interface ExportConfig {
 export interface ParamField {
   enabled: boolean
   field: string
+  rawField: string
+  parentField: string
   label: string
   type: FieldType
   sample: unknown
@@ -55,6 +58,7 @@ export interface ParamField {
   expand: {
     display: TableDisplay
   }
+  children: ParamField[]
 }
 
 export interface BuilderMeta {
@@ -100,6 +104,29 @@ export interface BuilderConfig {
   expandConfig: ExpandConfig
 }
 
+export interface OperationFieldConfig {
+  field: string
+  label: string
+  type: FieldType
+  widget: OperationFieldWidget
+  required: boolean
+  dictType: string
+  selectSource: SelectSource
+  enumRemark: string
+}
+
+export interface OperationConfig {
+  enabled: boolean
+  operationName: string
+  icon: string
+  permission: string
+  apiPath: string
+  apiName: string
+  method: string
+  visibleRemark: string
+  fields: OperationFieldConfig[]
+}
+
 export interface PromptStep {
   key: PromptStepKey
   title: string
@@ -112,6 +139,7 @@ export interface ParseResult {
   sourcePath: string
   mode: 'response-json' | 'openapi-schema'
   apiPath?: string
+  operationConfig?: OperationConfig
   queryParamCount?: number
   responseParamCount?: number
 }

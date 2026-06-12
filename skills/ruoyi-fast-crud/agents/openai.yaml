@@ -1,4 +1,4 @@
 interface:
   display_name: "RuoYi Fast CRUD"
-  short_description: "Implement Fast-Builder four-step RuoYi CRUD prompts"
-  default_prompt: "Use Fast-Builder output to implement one RuoYi CRUD step at a time."
+  short_description: "Implement Fast-Builder RuoYi CRUD and table-operation prompts"
+  default_prompt: "Use Fast-Builder output to implement one RuoYi CRUD step or table operation at a time."

@@ -35,6 +35,19 @@
 - 删除成功后提示成功并刷新列表。
 - 不要添加批量删除，除非用户明确要求。
 
+## 表格操作
+
+- `OperationConfig` 只添加一个业务操作按钮和对应弹窗，不补全其他 CRUD 能力。
+- 按目标项目已有操作列风格，把按钮加到 `el-table` 的操作列里；按钮文案使用 `operationName`，图标使用 `icon`。
+- `permission` 有值时，按相邻页面权限指令风格生成，例如 `v-hasPermi="['权限码']"`。
+- `visibleRemark` 有值时生成按钮显示条件；如果是自然语言备注，结合当前行字段推断简单可读的 `v-if`，不要写复杂表达式。
+- 点击按钮时记录当前行，打开 `el-dialog`，并把 `id` 等可从当前行取得的字段带入表单。
+- 弹窗内使用 `el-form`，字段来自 `fields`；`required = true` 的字段必须生成 rules。
+- `widget` 控制控件类型；数字字段使用 `el-input-number`；`el-select` / `el-radio` 优先复用字典或根据 `enumRemark` 生成静态选项。
+- 提交时调用 `apiName` 对应接口函数；接口地址 `apiPath` 和 `method` 只作为核对参考。
+- 提交成功后关闭弹窗、提示成功并刷新列表。
+- 不要重写列表查询、分页、导出、新增、修改、删除或详情逻辑。
+
 ## 展开行
 
 - `step5_expand_row` 只添加展开行。

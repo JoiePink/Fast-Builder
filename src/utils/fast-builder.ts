@@ -1,5 +1,5 @@
 import { parse as parseYaml } from 'yaml'
-import type { BuilderConfig, BuilderMeta, ExpandConfig, ExpandGroup, FieldType, FormWidget, ParamField, PromptStep, PromptStepKey, QueryWidget, TableDisplay } from '~/types/fast-builder'
+import type { BuilderConfig, BuilderMeta, ExpandConfig, ExpandGroup, FieldType, FormWidget, OperationConfig, OperationFieldConfig, ParamField, PromptStep, PromptStepKey, QueryWidget, TableDisplay } from '~/types/fast-builder'
 
 export function parseApiFoxJson(rawJson = '') {
   if (!rawJson.trim())
@@ -18,13 +18,16 @@ export function parseApiFoxJson(rawJson = '') {
   const fields = Array.from(new Set(rows.flatMap(row => Object.keys(row))))
   const paramsList = fields.map((field) => {
     const sample = rows.find(row => row[field] !== undefined)?.[field]
-    return createParamField(field, inferType(field, sample), sample, path)
+    const fieldConfig = createParamField(field, inferType(field, sample), sample, path)
+    fieldConfig.children = createFieldsFromObjectSample(field, sample, `${path}.${field}`)
+    return fieldConfig
   })
 
   return {
     paramsList,
     sourcePath: path,
     mode: 'response-json' as const,
+    operationConfig: createDefaultOperationConfig(),
     responseParamCount: paramsList.length,
   }
 }
@@ -38,6 +41,20 @@ export function createDefaultExpandConfig(): ExpandConfig {
     enabled: false,
     descriptionColumn: 4,
     groups: [],
+  }
+}
+
+export function createDefaultOperationConfig(): OperationConfig {
+  return {
+    enabled: false,
+    operationName: '',
+    icon: 'Edit',
+    permission: '',
+    apiPath: '',
+    apiName: '',
+    method: 'post',
+    visibleRemark: '',
+    fields: [],
   }
 }
 
@@ -64,7 +81,6 @@ function extractYamlSource(raw: string) {
    * i 忽略大小写
    */
   const codeBlock = raw.match(/```(?:ya?ml)?\s*([\s\S]*?)```/i)
-  console.log(codeBlock)
   if (codeBlock?.[1])
     return codeBlock[1].trim()
   if (/openapi:\s*3\./.test(raw) && /paths:\s*/.test(raw))
@@ -83,11 +99,12 @@ function parseOpenApiSchema(parsed: unknown, raw: string) {
 
   const responseSchema = getSuccessResponseSchema(operationInfo.operation)
   const listItemSchema = findListItemSchema(doc, responseSchema)
-  const responseFields = listItemSchema ? createFieldsFromSchema(listItemSchema, `schema:${operationInfo.path}.response`) : []
+  const responseFields = listItemSchema ? createFieldsFromSchema(listItemSchema, `schema:${operationInfo.path}.response`, doc) : []
   const queryFields = createQueryFields(operationInfo.operation, `schema:${operationInfo.path}.query`)
   const mergedFields = mergeQueryAndResponseFields(responseFields, queryFields)
+  const operationConfig = createOperationConfig(doc, operationInfo.path, operationInfo.method, operationInfo.operation)
 
-  if (!mergedFields.length)
+  if (!mergedFields.length && !operationConfig.enabled)
     return undefined
 
   return {
@@ -95,9 +112,82 @@ function parseOpenApiSchema(parsed: unknown, raw: string) {
     sourcePath: `schema:${operationInfo.path}`,
     mode: 'openapi-schema' as const,
     apiPath: operationInfo.path,
+    operationConfig,
     queryParamCount: queryFields.length,
     responseParamCount: responseFields.length,
   }
+}
+
+function createOperationConfig(doc: Record<string, unknown>, path: string, method: string, operation: Record<string, unknown>): OperationConfig {
+  const schema = getRequestBodySchema(operation)
+  if (!schema)
+    return createDefaultOperationConfig()
+
+  const resolvedSchema = resolveSchema(doc, schema)
+  if (!isRecord(resolvedSchema))
+    return createDefaultOperationConfig()
+
+  const operationId = readableText(operation.operationId)
+  const summary = readableText(operation.summary)
+
+  return {
+    ...createDefaultOperationConfig(),
+    enabled: true,
+    operationName: summary || operationId || '操作',
+    apiPath: path,
+    apiName: operationId || guessApiName(path),
+    method,
+    fields: createOperationFieldsFromSchema(resolvedSchema),
+  }
+}
+
+function getRequestBodySchema(operation: Record<string, unknown>) {
+  const requestBody = operation.requestBody
+  if (!isRecord(requestBody) || !isRecord(requestBody.content))
+    return undefined
+
+  const contentItems = Object.values(requestBody.content)
+  const content = contentItems.find((item): item is Record<string, unknown> => isRecord(item) && isRecord(item.schema))
+  return content?.schema
+}
+
+function createOperationFieldsFromSchema(schema: Record<string, unknown>): OperationFieldConfig[] {
+  const properties = schema.properties
+  if (!isRecord(properties))
+    return []
+
+  const required = Array.isArray(schema.required) ? schema.required.filter((item): item is string => typeof item === 'string') : []
+  const orders = Array.isArray(schema['x-apifox-orders']) ? schema['x-apifox-orders'].filter((item): item is string => typeof item === 'string') : []
+  const fieldNames = orders.length ? orders.filter(field => field in properties) : Object.keys(properties)
+
+  return fieldNames.map((field) => {
+    const property = isRecord(properties[field]) ? properties[field] : {}
+    const type = schemaToFieldType(field, property)
+    const description = readableText(property.description)
+    const dictType = defaultDictType(field)
+    return {
+      field,
+      label: description || guessLabel(field),
+      type,
+      widget: defaultOperationWidget(type, field),
+      required: required.includes(field),
+      dictType,
+      selectSource: dictType ? 'dict' : 'remark',
+      enumRemark: description,
+    }
+  })
+}
+
+function defaultOperationWidget(type: FieldType, field = ''): FormWidget {
+  if (type === 'number')
+    return 'el-input-number'
+  return defaultFormWidget(type, field)
+}
+
+function guessApiName(path: string) {
+  const segments = path.split('/').filter(Boolean)
+  const last = segments.at(-1) || 'operate'
+  return last.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase())
 }
 
 function findListOperation(doc: Record<string, unknown>) {
@@ -181,7 +271,7 @@ function resolveSchema(doc: Record<string, unknown>, schema: unknown): unknown {
   return current
 }
 
-function createFieldsFromSchema(schema: unknown, sourcePath: string) {
+function createFieldsFromSchema(schema: unknown, sourcePath: string, doc?: Record<string, unknown>) {
   const resolved = isRecord(schema) ? schema : undefined
   const properties = resolved?.properties
   if (!isRecord(properties))
@@ -191,10 +281,36 @@ function createFieldsFromSchema(schema: unknown, sourcePath: string) {
   const fieldNames = orders.length ? orders.filter(field => field in properties) : Object.keys(properties)
 
   return fieldNames.map((field) => {
-    const property = isRecord(properties[field]) ? properties[field] : {}
+    const property = isRecord(properties[field])
+      ? (doc && isRecord(resolveSchema(doc, properties[field])) ? resolveSchema(doc, properties[field]) as Record<string, unknown> : properties[field])
+      : {}
     const type = schemaToFieldType(field, property)
     const fieldConfig = createParamField(field, type, schemaExample(property), sourcePath)
     applySchemaLabel(fieldConfig, property)
+    fieldConfig.children = createChildFieldsFromSchema(field, property, `${sourcePath}.${field}`, doc)
+    return fieldConfig
+  })
+}
+
+function createChildFieldsFromSchema(parentField: string, schema: Record<string, unknown>, sourcePath: string, doc?: Record<string, unknown>) {
+  const properties = schema.properties
+  if (!isRecord(properties))
+    return []
+
+  const orders = Array.isArray(schema['x-apifox-orders']) ? schema['x-apifox-orders'].filter((item): item is string => typeof item === 'string') : []
+  const fieldNames = orders.length ? orders.filter(field => field in properties) : Object.keys(properties)
+
+  return fieldNames.map((field) => {
+    const property = isRecord(properties[field])
+      ? (doc && isRecord(resolveSchema(doc, properties[field])) ? resolveSchema(doc, properties[field]) as Record<string, unknown> : properties[field])
+      : {}
+    const type = schemaToFieldType(field, property)
+    const fieldConfig = createParamField(`${parentField}.${field}`, type, schemaExample(property), sourcePath, {
+      rawField: field,
+      parentField,
+    })
+    applySchemaLabel(fieldConfig, property)
+    fieldConfig.children = createChildFieldsFromSchema(fieldConfig.field, property, `${sourcePath}.${field}`, doc)
     return fieldConfig
   })
 }
@@ -278,7 +394,7 @@ function schemaToFieldType(field: string, schema: Record<string, unknown>): Fiel
 
   if (type === 'array')
     return 'array'
-  if (type === 'object')
+  if (type === 'object' || isRecord(schema.properties))
     return 'object'
   if (type === 'boolean')
     return 'boolean'
@@ -300,6 +416,8 @@ function schemaExample(schema: Record<string, unknown>) {
     return false
   if (schema.type === 'array')
     return []
+  if (schema.type === 'object' || isRecord(schema.properties))
+    return {}
   if (schema.format === 'date-time')
     return '2026-06-06 00:00:00'
   if (schema.format === 'date')
@@ -320,7 +438,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function buildConfig(meta: BuilderMeta, paramsList: ParamField[], expandConfig = createDefaultExpandConfig()): BuilderConfig {
-  const enabledFields = paramsList.filter(item => item.enabled)
+  const flatParamsList = flattenParamFields(paramsList)
+  const enabledFields = flatParamsList.filter(item => item.enabled)
   const expandFields = enabledFields.filter(item => item.displayTarget === 'expand')
   const expandGroups = normalizeExpandGroups(expandConfig, expandFields)
 
@@ -349,7 +468,7 @@ export function buildConfig(meta: BuilderMeta, paramsList: ParamField[], expandC
       fileName: meta.exportConfig.fileName || meta.businessName || '业务',
     },
     paramsList: enabledFields,
-    ignoredFields: paramsList.filter(item => !item.enabled),
+    ignoredFields: flatParamsList.filter(item => !item.enabled),
     queryFields: enabledFields.filter(item => item.query.enabled),
     tableColumns: enabledFields.filter(item => item.displayTarget === 'table'),
     expandFields,
@@ -365,6 +484,13 @@ export function buildConfig(meta: BuilderMeta, paramsList: ParamField[], expandC
       groups: expandGroups,
     },
   }
+}
+
+function flattenParamFields(paramsList: ParamField[]): ParamField[] {
+  return paramsList.flatMap((field) => {
+    const children = flattenParamFields(field.children || [])
+    return field.type === 'object' && children.length ? children : [field, ...children]
+  })
 }
 
 function normalizeExpandGroups(expandConfig: ExpandConfig, expandFields: ParamField[]): ExpandGroup[] {
@@ -417,6 +543,31 @@ export function generatePromptSteps(config: BuilderConfig): PromptStep[] {
   ]
 }
 
+export function generateOperationPrompt(config: OperationConfig) {
+  return `请使用 ruoyi-fast-crud skill，在已有分页列表页面中增量添加一个表格操作。
+
+【本次只做】
+只在 el-table 操作列中添加“${config.operationName || '操作'}”按钮，并使用 el-dialog + el-form 完成操作提交。
+
+【实现要求】
+1. 不要重写列表查询、分页、导出、新增、修改、删除、详情等既有逻辑。
+2. 在 el-table 操作列中添加按钮；按钮文案使用 operationName，图标使用 ElementPlus 图标 ${config.icon || 'Edit'}。
+3. 如果 permission 有值，按钮按目标项目相邻页面的权限指令风格添加权限控制。
+4. 按 visibleRemark 判断按钮显示条件；如果备注只是自然语言，请结合当前行字段推断最贴近的 v-if 条件，并在实现中保持简单可读。
+5. 点击按钮打开 el-dialog，弹窗内使用 el-form，字段来自 fields。
+6. 表单提交调用 ${config.apiName || 'operationApi'}，接口地址参考 ${config.method.toUpperCase()} ${config.apiPath}。
+7. 提交参数包含配置中的所有字段；通常 id 从当前行带入，其余字段由弹窗填写。
+8. fields 中 required 为 true 的字段必须加入表单校验。
+9. widget 为 el-select / el-radio 时，优先按 enumRemark 生成静态选项；如果 dictType 有值，复用项目字典写法。
+10. 提交成功后关闭弹窗，提示成功，并刷新列表。
+
+【操作配置 JSON】
+\`\`\`json
+${JSON.stringify(config, null, 2)}
+\`\`\`
+`
+}
+
 function extractRows(input: unknown): { rows: Record<string, unknown>[], path: string } {
   const paths = [
     ['data', 'rows'],
@@ -455,40 +606,65 @@ function extractRows(input: unknown): { rows: Record<string, unknown>[], path: s
   return { rows: [], path: '' }
 }
 
-function createParamField(field: string, type: FieldType, sample: unknown, sourcePath: string): ParamField {
-  const dictType = defaultDictType(field)
+function createParamField(
+  field: string,
+  type: FieldType,
+  sample: unknown,
+  sourcePath: string,
+  options: { rawField?: string, parentField?: string } = {},
+): ParamField {
+  const rawField = options.rawField || field
+  const dictType = defaultDictType(rawField)
 
   return {
     enabled: true,
     field,
-    label: guessLabel(field),
+    rawField,
+    parentField: options.parentField || '',
+    label: guessLabel(rawField),
     type,
     sample,
     sourcePath,
     dictType,
     selectSource: dictType ? 'dict' : 'remark',
-    enumRemark: /(status|flag)/i.test(field) ? '0是，1否' : '',
+    enumRemark: /(status|flag)/i.test(rawField) ? '0是，1否' : '',
     displayTarget: 'table',
     query: {
-      enabled: defaultQueryEnabled(field, type),
+      enabled: defaultQueryEnabled(rawField, type),
       widget: defaultWidget(type),
       operator: type === 'string' ? 'like' : 'eq',
       dateRange: defaultDateRangeConfig(field, type),
     },
     table: {
       enabled: true,
-      display: defaultDisplay(type, field),
+      display: defaultDisplay(type, rawField),
     },
     form: {
-      enabled: !isReadonlyField(field),
-      widget: defaultFormWidget(type, field),
+      enabled: !isReadonlyField(rawField),
+      widget: defaultFormWidget(type, rawField),
       required: false,
       uploadLimit: type === 'image' ? 1 : 0,
     },
     expand: {
-      display: defaultDisplay(type, field),
+      display: defaultDisplay(type, rawField),
     },
+    children: [],
   }
+}
+
+function createFieldsFromObjectSample(parentField: string, sample: unknown, sourcePath: string): ParamField[] {
+  if (!isRecord(sample))
+    return []
+
+  return Object.entries(sample).map(([field, value]) => {
+    const type = inferType(field, value)
+    const fieldConfig = createParamField(`${parentField}.${field}`, type, value, sourcePath, {
+      rawField: field,
+      parentField,
+    })
+    fieldConfig.children = createFieldsFromObjectSample(fieldConfig.field, value, `${sourcePath}.${field}`)
+    return fieldConfig
+  })
 }
 
 function inferType(field: string, value: unknown): FieldType {
@@ -697,8 +873,9 @@ ${instruction.only}
 3. API 文件和接口函数默认已存在；如果缺少引用，只补齐页面内 import，占位函数名使用配置里的 apiNames。
 4. 每个字段的字典/枚举配置只读取一次：dict-tag 和 el-select 都复用字段级 dictType、selectSource、enumRemark。
 5. tableColumns 与 expandFields 是展示位置二选一结果，同一字段不要同时生成到主表格和展开行。
-6. 权限写法必须参考目标项目相邻页面，不要自创权限指令；如果相邻页面使用 v-hasPermi，就按 v-hasPermi="['权限码']" 生成。
-7. 完成后运行项目已有的类型检查、lint 或构建命令；如果无法运行，请说明原因。
+6. field 中包含点路径（例如 user.nickName）的字段来自 Object 子字段，已在配置中与一级字段并列；生成页面时按普通同级字段处理，但读取表格行数据时保留点路径取值。
+7. 权限写法必须参考目标项目相邻页面，不要自创权限指令；如果相邻页面使用 v-hasPermi，就按 v-hasPermi="['权限码']" 生成。
+8. 完成后运行项目已有的类型检查、lint 或构建命令；如果无法运行，请说明原因。
 
 【本步骤实现细节】
 ${instruction.details.join('\n')}
