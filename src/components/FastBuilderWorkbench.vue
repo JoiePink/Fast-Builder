@@ -11,6 +11,7 @@ const activeTab = ref('fields')
 const activeStep = ref<PromptStepKey>('step1_query_page')
 const parseMessage = ref('')
 const parseError = ref('')
+// 解析区是否展开
 const sourcePanelCollapsed = ref(true)
 const expandedFieldKeys = ref<string[]>([])
 
@@ -49,6 +50,7 @@ const operationPrompt = computed(() => generateOperationPrompt(operationConfig))
 const allFieldRowsExpanded = computed(() => paramsList.value.length > 0 && expandedFieldKeys.value.length === paramsList.value.length)
 
 function handleParse() {
+  // 1. 如果解析区为空，则提示请先粘贴 ApiFox 分页响应 JSON 或 OpenAPI Schema
   if (!rawJson.value.trim()) {
     parseError.value = '请先粘贴 ApiFox 分页响应 JSON 或 OpenAPI Schema'
     parseMessage.value = ''
@@ -80,6 +82,9 @@ function handleParse() {
   }
 }
 
+/**
+ * 1. 
+ */
 function generatePrompts() {
   if (!paramsList.value.length && !handleParse())
     return
@@ -192,7 +197,7 @@ function removeExpandGroup(index: number) {
           Fast-Builder
         </div>
         <h1 class="m-0 text-2xl font-800 md:text-3xl">
-          RuoYi CRUD 四阶段提示词生成器
+          RuoYi CRUD Prompt Generator
         </h1>
       </div>
       <el-button type="primary" :icon="MagicStick" @click="generatePrompts">

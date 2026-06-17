@@ -4,7 +4,7 @@ import type { BuilderConfig, BuilderMeta, ExpandConfig, ExpandGroup, FieldType, 
 export function parseApiFoxJson(rawJson = '') {
   if (!rawJson.trim())
     throw new Error('请先粘贴 ApiFox 分页响应 JSON 或 OpenAPI Schema')
-
+  // 已经被解析成Object格式
   const parsed = parseInput(rawJson)
   const schemaResult = parseOpenApiSchema(parsed, rawJson)
   if (schemaResult)
@@ -58,10 +58,17 @@ export function createDefaultOperationConfig(): OperationConfig {
   }
 }
 
+/**
+ * 解析输入的 JSON 或 YAML 代码块
+ * @param rawJson 输入的 JSON 或 YAML 代码块
+ * @returns 解析后的 JSON 或 YAML 代码块
+ */
 function parseInput(rawJson: string) {
+  // 1. 尝试解析 JSON
   try {
     return JSON.parse(rawJson)
   }
+  // 2. 如果 JSON 解析失败，则尝试解析 YAML
   catch {
     const yamlSource = extractYamlSource(rawJson)
     if (!yamlSource)
@@ -70,8 +77,8 @@ function parseInput(rawJson: string) {
   }
 }
 
+/** 提取 YAML 代码块 */
 function extractYamlSource(raw: string) {
-  // 提取 YAML 代码块
   /**
    * ```三个反引号,markdown代码块开头
    * (?:ya?ml)? 可选 yaml 或 yml 或 没有
@@ -83,6 +90,7 @@ function extractYamlSource(raw: string) {
   const codeBlock = raw.match(/```(?:ya?ml)?\s*([\s\S]*?)```/i)
   if (codeBlock?.[1])
     return codeBlock[1].trim()
+  // 有openapi后面是3.x && 有paths ——> 直接是主体部分
   if (/openapi:\s*3\./.test(raw) && /paths:\s*/.test(raw))
     return raw.trim()
   return ''
@@ -190,7 +198,9 @@ function guessApiName(path: string) {
   return last.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase())
 }
 
+/** 找到分页列表操作(有参数或响应) */
 function findListOperation(doc: Record<string, unknown>) {
+  // path对象
   const paths = doc.paths as Record<string, unknown>
   const methodNames = ['get', 'post', 'put', 'delete']
 
@@ -199,6 +209,7 @@ function findListOperation(doc: Record<string, unknown>) {
       continue
     for (const method of methodNames) {
       const operation = pathConfig[method]
+      // 有parameters || responses ——> 有参数 || 有响应
       if (isRecord(operation) && (Array.isArray(operation.parameters) || operation.responses))
         return { path, method, operation }
     }

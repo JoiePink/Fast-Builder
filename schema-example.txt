@@ -1,4 +1,5 @@
-# 查询门店列表
+# 查询用户学习视频列表
+ user:userVideoStudy:list
 
 ## OpenAPI Specification
 
@@ -9,15 +10,19 @@ info:
   description: ''
   version: 1.0.0
 paths:
-  /api/store/list:
+  /user/userVideoStudy/list:
     get:
-      summary: 查询门店列表
+      summary: |-
+        查询用户学习视频列表
+         user:userVideoStudy:list
       deprecated: false
-      description: 查询门店列表
-      operationId: list_191
+      description: |-
+        查询用户学习视频列表
+         user:userVideoStudy:list
+      operationId: list
       tags:
-        - MR/门店
-        - 门店
+        - MR/用户学习视频
+        - 用户学习视频
       parameters:
         - name: createDept
           in: query
@@ -77,7 +82,7 @@ paths:
             x-apifox-orders: []
             properties: {}
             x-apifox-ignore-properties: []
-        - name: appStoreId
+        - name: userStudyId
           in: query
           description: 主键
           required: false
@@ -86,193 +91,78 @@ paths:
             type: integer
             format: int64
             description: 主键
-        - name: masterId
+        - name: userId
           in: query
-          description: 负责人id
+          description: 用户
           required: false
           example: 0
           schema:
             type: integer
             format: int64
-            description: 负责人id
-        - name: storeName
+            description: 用户
+        - name: appVideoId
           in: query
-          description: 门店名称
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 门店名称
-        - name: image
-          in: query
-          description: 图片
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 图片
-        - name: leader
-          in: query
-          description: 负责人
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 负责人
-        - name: mobile
-          in: query
-          description: 联系电话
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 联系电话
-        - name: area
-          in: query
-          description: 区域
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 区域
-        - name: province
-          in: query
-          description: 省份
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 省份
-        - name: city
-          in: query
-          description: 城市
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 城市
-        - name: district
-          in: query
-          description: 区县
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 区县
-        - name: address
-          in: query
-          description: 详细地址
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 详细地址
-        - name: lng
-          in: query
-          description: 经度
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 经度
-        - name: lat
-          in: query
-          description: 纬度
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 纬度
-        - name: saleNumber
-          in: query
-          description: 销售量
-          required: false
+          description: 视频id
+          required: true
           example: 0
           schema:
             type: integer
-            format: int32
-            description: 销售量
-        - name: businessStartTime
+            format: int64
+            description: 视频id
+        - name: appVideoImage
           in: query
-          description: 营业时间
-          required: false
+          description: 视频图片
+          required: true
           example: ''
           schema:
             type: string
-            format: date-time
-            description: 营业时间
-        - name: businessEndTime
+            description: 视频图片
+            minLength: 1
+        - name: appItemId
           in: query
-          description: 关门时间
-          required: false
+          description: 视频列表id
+          required: true
+          example: 0
+          schema:
+            type: integer
+            format: int64
+            description: 视频列表id
+        - name: title
+          in: query
+          description: 标题
+          required: true
           example: ''
           schema:
             type: string
-            format: date-time
-            description: 关门时间
+            description: 标题
+            minLength: 1
+        - name: videoImage
+          in: query
+          description: 封面图
+          required: true
+          example: ''
+          schema:
+            type: string
+            description: 封面图
+            minLength: 1
+        - name: videoUrl
+          in: query
+          description: 视频地址
+          required: true
+          example: ''
+          schema:
+            type: string
+            description: 视频地址
+            minLength: 1
         - name: status
           in: query
-          description: 状态(0正常, 1禁止)
-          required: false
+          description: 状态
+          required: true
           example: ''
           schema:
             type: string
-            description: 状态(0正常, 1禁止)
-        - name: type
-          in: query
-          description: 类型（1普通门店）
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 类型（1普通门店）
-        - name: sort
-          in: query
-          description: 排序
-          required: false
-          example: 0
-          schema:
-            type: integer
-            format: int32
-            description: 排序
-        - name: brandOpenStatus
-          in: query
-          description: 品牌是否开启(0是  1否)
-          required: false
-          example: ''
-          schema:
-            type: string
-            description: 品牌是否开启(0是  1否)
-        - name: supportsReservations
-          in: query
-          description: ''
-          required: false
-          example: ''
-          schema:
-            type: string
-        - name: staffId
-          in: query
-          description: ''
-          required: false
-          example: 0
-          schema:
-            type: integer
-            format: int64
-        - name: profit
-          in: query
-          description: ''
-          required: false
-          example: 0
-          schema:
-            type: number
-        - name: agentId
-          in: query
-          description: ''
-          required: false
-          example: 0
-          schema:
-            type: integer
-            format: int64
+            description: 状态
+            minLength: 1
         - name: pageSize
           in: query
           description: 分页大小
@@ -313,7 +203,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/TableDataInfoAppStoreVo'
+                $ref: '#/components/schemas/TableDataInfoUserVideoStudyVo'
           headers: {}
           x-apifox-name: 成功
         '401':
@@ -325,12 +215,12 @@ paths:
           headers: {}
           x-apifox-name: 没有权限
       security: []
-      x-apifox-folder: MR/门店
+      x-apifox-folder: MR/用户学习视频
       x-apifox-status: released
-      x-run-in-apifox: https://app.apifox.com/web/project/7559764/apis/api-390965735-run
+      x-run-in-apifox: https://app.apifox.com/web/project/7559764/apis/api-390965004-run
 components:
   schemas:
-    TableDataInfoAppStoreVo:
+    TableDataInfoUserVideoStudyVo:
       type: object
       description: 表格分页数据对象
       properties:
@@ -342,7 +232,7 @@ components:
           type: array
           description: 列表数据
           items:
-            $ref: '#/components/schemas/AppStoreVo'
+            $ref: '#/components/schemas/UserVideoStudyVo'
         code:
           type: integer
           format: int32
@@ -357,84 +247,59 @@ components:
         - msg
       x-apifox-ignore-properties: []
       x-apifox-folder: ''
-    AppStoreVo:
+    UserVideoStudyVo:
       type: object
-      description: 门店视图对象 store
+      description: 用户学习视频视图对象 user_video_study
       properties:
-        appStoreId:
+        userStudyId:
           type: integer
           format: int64
           description: 主键
-        storeName:
-          type: string
-          description: 门店名称
-        image:
-          type: string
-          description: 图片
-        imageUrl:
-          type: string
-          description: 图片Url
-        leader:
-          type: string
-          description: 负责人
-        mobile:
-          type: string
-          description: 联系电话
-        area:
-          type: string
-          description: 区域
-        province:
-          type: string
-          description: 省份
-        city:
-          type: string
-          description: 城市
-        district:
-          type: string
-          description: 区县
-        address:
-          type: string
-          description: 详细地址
-        lng:
-          type: string
-          description: 经度
-        lat:
-          type: string
-          description: 纬度
-        saleNumber:
+        userId:
           type: integer
-          format: int32
-          description: 销售量
-        businessStartTime:
-          type: string
-          format: date-time
-          description: 营业时间
-        businessEndTime:
-          type: string
-          format: date-time
-          description: 关门时间
-        distance:
+          format: int64
+          description: 用户
+        appVideoId:
           type: integer
-          format: int32
-          description: 距离(米)
+          format: int64
+          description: 视频id
+        appVideoImage:
+          type: string
+          description: 视频图片
+        appVideoImageUrl:
+          type: string
+          description: 视频图片Url
+        appItemId:
+          type: integer
+          format: int64
+          description: 视频列表id
+        title:
+          type: string
+          description: 标题
+        videoImage:
+          type: string
+          description: 封面图
+        videoImageUrl:
+          type: string
+          description: 封面图Url
+        videoUrl:
+          type: string
+          description: 视频地址
+        status:
+          type: string
+          description: 状态
       x-apifox-orders:
-        - appStoreId
-        - storeName
-        - image
-        - imageUrl
-        - leader
-        - mobile
-        - area
-        - province
-        - city
-        - district
-        - address
-        - lng
-        - lat
-        - saleNumber
-        - businessStartTime
-        - businessEndTime
-        - distance
+        - userStudyId
+        - userId
+        - appVideoId
+        - appVideoImage
+        - appVideoImageUrl
+        - appItemId
+        - title
+        - videoImage
+        - videoImageUrl
+        - videoUrl
+        - status
       x-apifox-ignore-properties: []
       x-apifox-folder: ''
   securitySchemes:
