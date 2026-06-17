@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useHead({
-  title: '小程序页面功能制作 - Fast-Builder',
+  title: '小程序页面功能制作 - Vibe Coding',
 })
 </script>
 

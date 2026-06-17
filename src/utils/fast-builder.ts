@@ -802,6 +802,8 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '调用列表接口时，按项目既有写法使用 proxy?.reconstructDateRange(queryParams.value, 日期范围变量.value, beginParam, endParam)。如果 paramCount 为 1，只传配置的 beginParam；如果 paramCount 为 2，同时传 beginParam 和 endParam；如果存在多个日期范围字段，先按相同规则构造请求参数后再调用 apiNames.list。',
         'resetQuery 中除了 queryFormRef.value?.resetFields()，还要把所有日期范围变量重置为 [\'\', \'\']。',
         '按 tableColumns 生成 el-table 列；dict-tag 字段统一使用字段级 dictType。',
+        '生成主 el-table 列之前，先结合 businessName、pageName、字段 label/field 和目标项目相邻页面，对 tableColumns 做业务排序，不要机械照搬 ApiFox/OpenAPI Schema 解析出的字段顺序。',
+        '主表格排序建议：名称/标题/编号/单号/主体对象等核心识别字段靠前，状态/类型/金额/数量/联系方式/业务时间等常用字段居中，创建/更新时间、创建/更新人、备注等审计补充字段靠后；id、内部标识、技术字段不要默认排第一，除非相邻页面就是这样。',
         '处理 text、image-preview、dict-tag、el-tag、el-rate、date-format 展示类型；display 为 el-tag 时必须读取 table.tagType 作为 <el-tag> 的 type，未配置时默认 primary。',
         'display 为 el-rate 时必须使用 el-tooltip 包裹 disabled 的 el-rate：有值时 <el-tooltip :content="formatScore(value)" placement="top"><span class="rate-tooltip-wrap"><el-rate :model-value="Number(value)" allow-half disabled /></span></el-tooltip>，无值时显示 -；同时生成 hasScore(value) 与 formatScore(value) 工具函数。',
         '加入若依分页组件，并确保分页变化会重新调用列表接口。',
@@ -822,6 +824,8 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '新增按钮使用 permissionConfig.add；修改按钮使用 permissionConfig.edit；权限指令写法必须参考目标项目相邻页面。',
         '新增使用 apiNames.add，修改使用 apiNames.update；编辑回显使用 apiNames.detail 或相邻页面已有获取详情写法，但不要生成查看详情按钮或详情弹窗。',
         '按 formFields 生成表单项，并遵守字段 required 配置；ignoredFields 不生成。',
+        '生成新增 / 修改表单项之前，先结合 businessName、pageName、字段 label/field 和目标项目相邻页面，对 formFields 做业务填写路径排序，不要机械照搬 ApiFox/OpenAPI Schema 解析出的字段顺序。',
+        '表单排序建议：名称/标题/编号/主体对象等基础识别信息靠前，类型/状态/业务属性/金额/数量/业务时间等主要填写字段居中，图片/附件/排序/备注等补充字段靠后；主键、内部标识、创建/更新人、创建/更新时间等审计字段不要默认排在表单前面，除非用户明确启用且相邻页面如此。',
         '表单控件支持 el-input、el-textarea、el-input-number、el-select、el-select-multiple、el-radio、el-date-picker、el-switch、image-upload。',
         'form.widget 为 el-input-number 时，生成 ElementPlus 数字输入框 <el-input-number v-model="form.field" controls-position="right" />；字段名包含 sort 的排序字段（如 sort、sortOrder、sortNo、displaySort）必须使用 el-input-number，不要使用普通 el-input。',
         'form.widget 为 el-select、el-select-multiple、el-radio 时，统一读取字段级 selectSource、dictType、enumRemark。',
@@ -856,6 +860,8 @@ function generatePrompt(step: PromptStepKey, config: BuilderConfig) {
         '展开行只使用 el-descriptions，不要生成展开子表格或嵌套 el-table。',
         '按 expandConfig.groups 生成一个或多个 el-descriptions；group.title 有值时作为 title，没有值时不传 title。',
         '每个 group.fields 是该描述项组合包含的字段名列表；字段标题、展示形式、dictType、tagType 等仍然读取 expandFields 中对应字段的配置。',
+        '生成 el-descriptions 字段之前，先结合 businessName、pageName、字段 label/field 和目标项目相邻页面，对 expandFields 做业务阅读路径排序，不要机械照搬 ApiFox/OpenAPI Schema 解析出的字段顺序。',
+        '如果 expandConfig.groups 已有分组，保留分组边界和标题，只调整每个组内字段顺序；如果是默认单组，则对全部展开字段统一排序。排序建议：核心摘要和主体信息靠前，业务详情居中，创建/更新信息和备注靠后。',
         'expand.display 为 el-tag 时必须读取 expand.tagType 作为 <el-tag> 的 type，未配置时默认 primary。',
         'expand.display 为 el-rate 时必须使用 el-tooltip 包裹 disabled 的 el-rate：有值时 <el-tooltip :content="formatScore(value)" placement="top"><span class="rate-tooltip-wrap"><el-rate :model-value="Number(value)" allow-half disabled /></span></el-tooltip>，无值时显示 -；value 读取当前展开行字段值。',
         '所有 el-descriptions 的 column 使用 expandConfig.descriptionColumn。',
@@ -896,7 +902,7 @@ ${instruction.only}
 【本步骤实现细节】
 ${instruction.details.join('\n')}
 
-【Fast-Builder 配置 JSON】
+【Vibe Coding 配置 JSON】
 \`\`\`json
 ${JSON.stringify(config, null, 2)}
 \`\`\`

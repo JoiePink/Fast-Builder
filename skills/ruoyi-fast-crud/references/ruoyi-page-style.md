@@ -10,6 +10,8 @@
 - 日期范围查询必须保持 `order/orderList/index.vue` 的公司内部写法：模板使用 `el-date-picker class="serarchInput"`、`type="daterange"`、`value-format="YYYY-MM-DD HH:mm:ss"`，脚本中使用 `dateRange = ref<any>(['', ''])` 这类范围变量，请求前通过 `proxy?.reconstructDateRange(queryParams.value, dateRange.value, 'createTimeBegin', 'createTimeEnd')` 生成真实参数，重置时清空范围变量。
 - 使用项目已有分页组件和 `right-toolbar` 写法。
 - 字典、图片预览、日期格式化、权限指令优先使用项目已有封装，例如 `dict-tag`、`image-preview`。
+- 主表格列顺序要按业务阅读路径重新整理，不要直接沿用 ApiFox/OpenAPI Schema 的属性顺序。先结合 `businessName`、`pageName`、字段名、字段标题和相邻页面判断核心业务字段，把名称/标题/编号/单号/主体对象等放在前面，状态/类型/金额/数量/联系方式等常用信息放在中间，创建/更新时间、创建/更新人、备注等审计补充信息放在后面。
+- `id`、内部标识、技术字段不要默认排在主表格第一列；只有当目标项目相邻页面明确把它作为首列展示时才跟随。
 - 主表格字段展示形式为 `el-tag` 时，使用配置里的 `table.tagType` 作为 `<el-tag>` 的 `type`；缺省为 `primary`。
 - 主表格字段展示形式为 `el-rate` 时，按 `<el-tooltip v-if="hasScore(value)" :content="formatScore(value)" placement="top"><span class="rate-tooltip-wrap"><el-rate :model-value="Number(value)" allow-half disabled /></span></el-tooltip><span v-else>-</span>` 的结构生成。
 - 查询、重置按钮默认不加权限；`exportConfig.enabled = true` 时，导出按钮使用 `permissionConfig.export`。
@@ -24,6 +26,7 @@
 - 编辑回显可以使用 `apiNames.detail` 或目标项目相邻页面已有获取详情写法，但不要因此生成查看详情按钮或详情弹窗。
 - 复用本地的 form ref、rules、reset、submit、成功提示、刷新列表写法。
 - `el-select`、`el-select-multiple`、`el-radio` 的选项来源都使用字段级 `selectSource`、`dictType`、`enumRemark`，不要重复定义第二套字典配置。
+- 新增 / 修改表单项顺序要按用户填写路径重新整理，不要直接沿用 ApiFox/OpenAPI Schema 的属性顺序。基础识别信息、名称、标题、主体对象等靠前；业务属性、类型、状态、金额、数量、时间等居中；图片/附件、排序、备注等补充字段靠后；主键、内部标识、创建/更新人、创建/更新时间等审计字段通常不要排在表单前面。
 - 字段名包含 sort 的排序字段（如 `sort`、`sortOrder`、`sortNo`、`displaySort`）在新增 / 修改表单中使用 `el-input-number`，保持 `controls-position="right"`。
 - 图片上传字段使用项目已封装的 `ImageUpload` 组件，按 `ossId` 字段值传入，并遵守 `form.uploadLimit`。
 - 提交成功后关闭弹窗并刷新列表。
@@ -65,6 +68,7 @@
 - 展开行只使用 `el-descriptions`，不要生成展开子表格或嵌套 `el-table`。
 - 按 `expandConfig.groups` 生成一个或多个描述项组合；`group.title` 有值时作为标题，没有值时不传标题。
 - `group.fields` 控制每个组合中展示哪些展开字段；字段展示形式继续读取 `expandFields` 中对应字段的 `expand.display`，其中 `el-tag` 使用 `expand.tagType` 作为 `<el-tag>` 的 `type`。
+- `el-descriptions` 内字段顺序要按业务阅读路径重新整理，不要直接沿用 ApiFox/OpenAPI Schema 的属性顺序。若 `expandConfig.groups` 已有分组，保留分组边界和标题，只调整每个组内字段顺序；若是默认单组，则对全部展开字段统一排序。核心摘要和主体信息靠前，业务详情居中，创建/更新信息和备注靠后。
 - 展开字段展示形式为 `el-rate` 时，同样使用 `el-tooltip + el-rate disabled`，有值显示评分并在 tooltip 中展示 `formatScore(value)`，无值显示 `-`。
 - 每个 `<el-descriptions>` 的列数使用 `expandConfig.descriptionColumn`。
 - 描述列表默认保持 `label-width="120"` 和 `style="margin-top: 10px; padding: 0 10px;"`，除非目标项目附近页面有不同风格。

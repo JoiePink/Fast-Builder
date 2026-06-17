@@ -27,7 +27,7 @@ const defaultOpeneds = computed(() => navigationGroups.value.map(group => group.
       <aside class="border-r border-slate-200 bg-white md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0">
         <div class="border-b border-slate-200 px-5 py-5">
           <div class="text-xs text-teal-700 font-bold uppercase">
-            Fast-Builder
+            Vibe Coding
           </div>
           <div class="mt-1 text-lg text-slate-950 font-800">
             Vibe Coding 工具台

@@ -33,11 +33,11 @@ Fast-Builder 会输出一份共享的 `BuilderConfig`、四份分阶段提示词
   - `query.dateRange.paramCount` 表示真实接口参数数量，支持 `1` 或 `2`。
   - `query.dateRange.beginParam` / `query.dateRange.endParam` 是接口真实参数，例如 `createTimeBegin`、`createTimeEnd`。
   - 日期范围请求参数必须按项目内部方法 `proxy?.reconstructDateRange(...)` 生成。
-- `tableColumns`：主表格字段。
-- `expandFields`：展开行字段。
+- `tableColumns`：主表格字段。Schema 解析出的数组顺序只能作为输入参考，生成 `step1_query_page` 的 `el-table` 时必须结合业务语义重新排序，不要机械照搬。
+- `expandFields`：展开行字段。Schema 解析出的数组顺序只能作为输入参考，生成 `step5_expand_row` 的 `el-descriptions` 时必须结合业务语义重新排序。
 - 字段展示形式为 `el-tag` 时，主表格使用 `table.tagType`，展开行使用 `expand.tagType` 作为 `<el-tag>` 的 `type`；缺省值为 `primary`。
 - 字段展示形式为 `el-rate` 时，使用 `el-tooltip` 包裹 disabled 的 `el-rate`，保留 `allow-half`、`rate-tooltip-wrap`，空值显示 `-`，并生成 `hasScore(value)` / `formatScore(value)` 工具函数。
-- `formFields`：新增 / 修改表单字段。
+- `formFields`：新增 / 修改表单字段。Schema 解析出的数组顺序只能作为输入参考，生成 `step3_form` 的新增 / 修改表单时必须结合业务填写路径重新排序。
   - `form.widget` 支持 `el-input`、`el-textarea`、`el-input-number`、`el-select`、`el-select-multiple`、`el-radio`、`el-date-picker`、`el-switch`、`image-upload`。
   - `form.widget = el-input-number` 时，生成 ElementPlus 数字输入框；字段名包含 sort 的排序字段（如 `sort`、`sortOrder`、`sortNo`、`displaySort`）必须使用 `el-input-number`，不要使用普通 `el-input`。
   - `el-select`、`el-select-multiple`、`el-radio` 都读取字段级 `selectSource`、`dictType`、`enumRemark`。
@@ -102,6 +102,26 @@ Fast-Builder 会输出一份共享的 `BuilderConfig`、四份分阶段提示词
 - `none`：不作为列表展示字段。
 
 `tableColumns` 和 `expandFields` 是互斥结果。同一个字段不要同时生成到两个位置。
+
+生成主表格列时，先按业务场景整理 `tableColumns` 的展示顺序：
+
+- 名称、标题、编号、单号、用户/客户/商品/订单等核心识别字段优先靠前。
+- 状态、类型、金额、数量、联系方式、业务时间等高频业务字段放在中间。
+- 创建/更新时间、创建/更新人、备注等审计和补充字段放在靠后位置。
+- `id`、内部标识、技术字段不要因为 schema 顺序靠前就生成在第一列，除非目标项目相邻页面明确这样展示。
+
+生成新增 / 修改表单项时，先按用户填写路径整理 `formFields` 的展示顺序：
+
+- 名称、标题、编号、主体对象等基础识别信息优先靠前。
+- 类型、状态、业务属性、金额、数量、业务时间等需要用户主要填写的字段放在中间。
+- 图片/附件、排序、备注等补充字段放在靠后位置。
+- 主键、内部标识、创建/更新人、创建/更新时间等审计字段不要因为 schema 顺序靠前就排在表单前面，除非用户明确启用且相邻页面也这样处理。
+
+生成展开行 `el-descriptions` 时，先按业务阅读路径整理 `expandFields` 的展示顺序：
+
+- 若 `expandConfig.groups` 已有分组，保留分组边界和标题，只调整每个组内字段顺序。
+- 若是默认单组，则对全部展开字段统一排序。
+- 核心摘要和主体信息靠前，业务详情居中，创建/更新信息和备注靠后。
 
 ## 四阶段边界
 

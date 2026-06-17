@@ -194,7 +194,7 @@ function removeExpandGroup(index: number) {
     <section class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div>
         <div class="mb-1 text-sm text-teal-700 font-bold">
-          Fast-Builder
+          Vibe Coding
         </div>
         <h1 class="m-0 text-2xl font-800 md:text-3xl">
           RuoYi CRUD Prompt Generator

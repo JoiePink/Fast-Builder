@@ -106,8 +106,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'safari-pinned-tab.svg'],
       manifest: {
-        name: 'Vitesse',
-        short_name: 'Vitesse',
+        name: 'Vibe Coding',
+        short_name: 'Vibe Coding',
         theme_color: '#ffffff',
         icons: [
           {
