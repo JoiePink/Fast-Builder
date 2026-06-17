@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import FastBuilderWorkbench from '~/components/FastBuilderWorkbench.vue'
+import { defaultToolPath } from '~/config/tool-navigation'
+
+const router = useRouter()
+
+onMounted(() => {
+  router.replace(defaultToolPath)
+})
 </script>
 
 <template>
-  <FastBuilderWorkbench />
+  <div class="min-h-screen flex items-center justify-center p-6">
+    <el-empty description="正在进入工具台" />
+  </div>
 </template>

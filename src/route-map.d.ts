@@ -51,9 +51,23 @@ declare module 'vue-router/auto-routes' {
       { name: ParamValue<false> },
       | never
     >,
+    '/miniapp/pages': RouteRecordInfo<
+      '/miniapp/pages',
+      '/miniapp/pages',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/README': RouteRecordInfo<
       '/README',
       '/README',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/ruoyi/crud': RouteRecordInfo<
+      '/ruoyi/crud',
+      '/ruoyi/crud',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -95,9 +109,21 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
+    'src/pages/miniapp/pages.vue': {
+      routes:
+        | '/miniapp/pages'
+      views:
+        | never
+    }
     'src/pages/README.md': {
       routes:
         | '/README'
+      views:
+        | never
+    }
+    'src/pages/ruoyi/crud.vue': {
+      routes:
+        | '/ruoyi/crud'
       views:
         | never
     }
