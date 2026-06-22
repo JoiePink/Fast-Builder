@@ -72,6 +72,20 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/WechatEntryLoginFlow': RouteRecordInfo<
+      '/WechatEntryLoginFlow',
+      '/WechatEntryLoginFlow',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/WechatStartFlowBuilder': RouteRecordInfo<
+      '/WechatStartFlowBuilder',
+      '/WechatStartFlowBuilder',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
   }
 
   /**
@@ -124,6 +138,18 @@ declare module 'vue-router/auto-routes' {
     'src/pages/ruoyi/crud.vue': {
       routes:
         | '/ruoyi/crud'
+      views:
+        | never
+    }
+    'src/pages/WechatEntryLoginFlow.vue': {
+      routes:
+        | '/WechatEntryLoginFlow'
+      views:
+        | never
+    }
+    'src/pages/WechatStartFlowBuilder.vue': {
+      routes:
+        | '/WechatStartFlowBuilder'
       views:
         | never
     }

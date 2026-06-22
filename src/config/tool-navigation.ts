@@ -12,10 +12,9 @@ export const toolNavigation: ToolNavigationItem[] = [
     group: '若依后台',
   },
   {
-    label: '页面功能制作',
+    label: '微信小程序登录注册',
     path: '/miniapp/pages',
     group: '小程序',
-    comingSoon: true,
   },
 ]
 

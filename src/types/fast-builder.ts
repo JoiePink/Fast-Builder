@@ -157,3 +157,62 @@ export interface ExpandConfig {
   descriptionColumn: number
   groups: ExpandGroup[]
 }
+
+export type WechatMiniAuthFlowMode = 'method1SeparateRegister'
+export type WechatMiniAuthPromptStepKey = 'global_app' | 'start_page' | 'bind_page' | 'share_pages' | 'acceptance'
+export type WechatMiniAuthParamSource = 'phoneAuthCode' | 'wxLoginCode' | 'getPhoneResult' | 'appConfig' | 'inviteCode' | 'fixed' | 'manual' | 'previousResponse'
+
+export interface WechatMiniAuthParamConfig {
+  field: string
+  source: WechatMiniAuthParamSource
+  value: string
+  remark: string
+}
+
+export interface WechatMiniAuthConfig {
+  flowMode: WechatMiniAuthFlowMode
+  projectName: string
+  apis: {
+    login: string
+    getPhone: string
+    register: string
+    profile: string
+  }
+  fields: {
+    appid: string
+    loginCode: string
+    phoneCode: string
+    phoneNumber: string
+    source: string
+    token: string
+    bindFlag: string
+    openId: string
+    inviteCode: string
+    shareId: string
+    userInfo: string
+  }
+  pages: {
+    startPage: string
+    bindPage: string
+    defaultHome: string
+    sharePages: string[]
+  }
+  entry: {
+    enableQrCode: boolean
+    enableShare: boolean
+    sceneParam: string
+    pageParam: string
+  }
+  method1: {
+    getPhoneParams: WechatMiniAuthParamConfig[]
+    registerParams: WechatMiniAuthParamConfig[]
+    loginParams: WechatMiniAuthParamConfig[]
+  }
+}
+
+export interface WechatMiniAuthPromptStep {
+  key: WechatMiniAuthPromptStepKey
+  title: string
+  description: string
+  prompt: string
+}
