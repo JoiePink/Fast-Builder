@@ -1,0 +1,7 @@
+interface:
+  display_name: "02 绑定手机号"
+  short_description: "从 Figma 生成微信小程序绑定手机号登录页"
+  default_prompt: "使用 $02bind-phone-number，根据 Figma 设计稿生成微信原生小程序绑定手机号登录页。"
+
+policy:
+  allow_implicit_invocation: true

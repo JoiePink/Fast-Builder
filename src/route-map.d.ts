@@ -44,6 +44,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/demo': RouteRecordInfo<
+      '/demo',
+      '/demo',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/hi/[name]': RouteRecordInfo<
       '/hi/[name]',
       '/hi/:name',
@@ -51,9 +58,16 @@ declare module 'vue-router/auto-routes' {
       { name: ParamValue<false> },
       | never
     >,
-    '/miniapp/pages': RouteRecordInfo<
-      '/miniapp/pages',
-      '/miniapp/pages',
+    '/miniapp/01loginStart': RouteRecordInfo<
+      '/miniapp/01loginStart',
+      '/miniapp/01loginStart',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/miniapp/02bindPhoneNumber': RouteRecordInfo<
+      '/miniapp/02bindPhoneNumber',
+      '/miniapp/02bindPhoneNumber',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -68,20 +82,6 @@ declare module 'vue-router/auto-routes' {
     '/ruoyi/crud': RouteRecordInfo<
       '/ruoyi/crud',
       '/ruoyi/crud',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/WechatEntryLoginFlow': RouteRecordInfo<
-      '/WechatEntryLoginFlow',
-      '/WechatEntryLoginFlow',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/WechatStartFlowBuilder': RouteRecordInfo<
-      '/WechatStartFlowBuilder',
-      '/WechatStartFlowBuilder',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -117,15 +117,27 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
+    'src/pages/demo.vue': {
+      routes:
+        | '/demo'
+      views:
+        | never
+    }
     'src/pages/hi/[name].vue': {
       routes:
         | '/hi/[name]'
       views:
         | never
     }
-    'src/pages/miniapp/pages.vue': {
+    'src/pages/miniapp/01loginStart.vue': {
       routes:
-        | '/miniapp/pages'
+        | '/miniapp/01loginStart'
+      views:
+        | never
+    }
+    'src/pages/miniapp/02bindPhoneNumber.vue': {
+      routes:
+        | '/miniapp/02bindPhoneNumber'
       views:
         | never
     }
@@ -138,18 +150,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/ruoyi/crud.vue': {
       routes:
         | '/ruoyi/crud'
-      views:
-        | never
-    }
-    'src/pages/WechatEntryLoginFlow.vue': {
-      routes:
-        | '/WechatEntryLoginFlow'
-      views:
-        | never
-    }
-    'src/pages/WechatStartFlowBuilder.vue': {
-      routes:
-        | '/WechatStartFlowBuilder'
       views:
         | never
     }

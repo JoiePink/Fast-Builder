@@ -18,7 +18,7 @@
 
     <el-checkbox-group v-model="enabledEntryModeIds" class="entry-tabs" size="large">
       <el-checkbox-button v-for="entry in entryModes" :key="entry.id" :label="entry.id">
-        {{ entry.step }} {{ entry.title }} · {{ entry.status }}
+        {{ entry.step }} {{ entry.title }} 
       </el-checkbox-button>
     </el-checkbox-group>
 
@@ -461,6 +461,10 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue'
+
+useHead({
+  title: '启动页自动登录 - Vibe Coding',
+})
 
 const enabledEntryModeIds = ref(['normal', 'qrcode', 'share'])
 const selectedNodeId = ref('enter')

@@ -250,7 +250,7 @@ interface MiniAppBuilderConfig {
 
 ### MVP 页面
 
-在 `/miniapp/pages` 中实现一个新的工作台：
+在 `/miniapp/loginStart` 中实现一个新的工作台：
 
 1. ApiFox / OpenAPI 粘贴区
 2. 项目基础配置
@@ -339,7 +339,7 @@ interface MiniAppBuilderConfig {
 1. 抽离当前 `fast-builder.ts` 中的平台无关解析能力。
 2. 新增 `src/types/miniapp-builder.ts`。
 3. 新增 `src/utils/miniapp-builder.ts`，先实现 `buildMiniAppConfig` 和 `generateMiniAppPromptSteps`。
-4. 把 `/miniapp/pages` 从 Coming Soon 改成真实工作台。
+4. 把 `/miniapp/loginStart` 从 Coming Soon 改成真实工作台。
 5. 先支持列表页、详情页、表单页三种页面。
 6. 使用一个真实小程序页面做回放测试，检查提示词是否能稳定让 AI 增量实现。
 7. 再补行业配置和操作按钮配置。

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Fast-Builder 项目规范"
+  short_description: "Fast-Builder 可复用方法论工具项目约束"
+  default_prompt: "使用 $fast-builder-project，在 Fast-Builder 中实现可复用的方法论工具。"
+
+policy:
+  allow_implicit_invocation: true
