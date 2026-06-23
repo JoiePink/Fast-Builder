@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import WechatMiniAuthWorkbench from '~/components/WechatMiniAuthWorkbench.vue'
+import WechatStartFlowBuilder from '../WechatStartFlowBuilder.vue'
 
 useHead({
   title: '微信小程序登录注册 - Vibe Coding',
@@ -7,5 +7,5 @@ useHead({
 </script>
 
 <template>
-  <WechatMiniAuthWorkbench />
+  <WechatStartFlowBuilder />
 </template>
