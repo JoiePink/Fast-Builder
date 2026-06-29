@@ -25,6 +25,14 @@ interface ApiParameter {
   manual?: boolean
 }
 
+interface PhoneApiRequestParameter extends ApiParameter {
+  enabled: boolean
+}
+
+interface PhoneApiResponseParameter extends ApiParameter {
+  selected: boolean
+}
+
 interface OpenApiResult {
   method: string
   path: string
@@ -55,6 +63,8 @@ interface AuthApiInterface {
   responsePool: AuthApiResponseParameter[]
 }
 
+type SeparatePublicMappingKey = 'loginData' | 'token' | 'bindFlag' | 'openId'
+
 const defaultFigmaMcpText = `Implement this design from Figma.
 @https://www.figma.com/design/iqDtxgOfQMsodBHA9QFQso/%E5%BE%8B%E5%B8%88%E5%B0%8F%E7%A8%8B%E5%BA%8F?node-id=140-3451&m=dev`
 
@@ -68,25 +78,33 @@ const parameterPool = reactive<PhoneParameter[]>([])
 const loginCredentialMode = ref<'code' | 'phone'>('code')
 const phoneApiDocument = ref('')
 const phoneApiParserStatus = ref('等待粘贴 OpenAPI/Swagger')
-const phoneResponsePath = ref('')
+const phoneApiPoolsConfirmed = ref(false)
 const parsedPhoneApi = reactive({
   method: '-',
   path: '-',
   summary: '未解析',
 })
-const phoneApiRequestPool = reactive<ApiParameter[]>([])
-const phoneApiResponsePool = reactive<ApiParameter[]>([])
+const phoneApiRequestPool = reactive<PhoneApiRequestParameter[]>([])
+const phoneApiResponsePool = reactive<PhoneApiResponseParameter[]>([])
 const authMode = ref<'separate' | 'combined'>('separate')
 const authApiDocuments = reactive<Record<'login' | 'register' | 'combined', string>>({ login: '', register: '', combined: '' })
 const authApiStatuses = reactive<Record<'login' | 'register' | 'combined', string>>({ login: '等待解析', register: '等待解析', combined: '等待解析' })
 const authApiInterfaces = reactive<AuthApiInterface[]>([])
+const separateBindFlagResponsePath = ref('')
+const separatePublicMappings = reactive<Record<SeparatePublicMappingKey, string>>({
+  loginData: '',
+  token: '',
+  bindFlag: '',
+  openId: '',
+})
 const currentStep = ref(1)
 const activeStep = ref(1)
 const separateAuthProcess = [
-  'getCode 成功后读取 app.public.bindFlag',
-  'bindFlag 为 true 时调用 role=login 的登录接口',
-  'bindFlag 为 false 时调用 role=register 的注册接口',
-  '登录或注册成功后保存 app.public.loginData、app.public.token、app.public.bindFlag、app.public.openId',
+  'getCode 成功后先调用 role=login 的登录接口',
+  '从登录接口返回值中按 separateBindFlagResponsePath 读取绑定状态',
+  '绑定状态为 true 时保存登录态并继续 getUserInfo/linkTo',
+  '绑定状态为 false 时调用 role=register 的注册接口',
+  '登录或注册成功后按 separatePublicMappings 保存 app.public.loginData、app.public.token、app.public.bindFlag、app.public.openId',
   '成功结果存在 token 时调用 getUserInfo，写入 app.public.userInfo',
   '没有 token 或 getUserInfo 失败时也要用 wx.hideLoading 结束原生 loading 并执行 linkTo',
   '注册接口 fail 且 msg 包含“已经绑定过第三方用户”时，重新调用 wx.login 获取新的 xcxCode，再调用登录接口',
@@ -98,7 +116,7 @@ const combinedAuthProcess = [
   '请求 role=combined 的登录注册共用接口，参数包含 phoneCode、codeXcx、clientId、grantType，若项目存在 inviteCode 则一并带上',
   '接口成功后保存 app.public.loginData、app.public.bingFlag 或 bindFlag、app.public.token、app.public.needEditInfo',
   '如果 token 存在，调用 getUserInfo 或 /app/user/self 获取当前用户信息，写入 app.public.userInfo 后 linkTo',
-  '如果 token 不存在，也按参考流程执行 linkTo',
+  '如果 token 不存在，也执行 linkTo',
   '不纳入 showAvatarNicknameModal、头像昵称弹窗、submit、uploadUserInfoToServer、/app/user/update 这一段流程',
   '所有失败分支必须调用 wx.hideLoading，避免原生 loading 悬挂',
 ]
@@ -116,7 +134,7 @@ const flowSteps = [
 const needsPhoneExchangeApi = computed(() => loginCredentialMode.value === 'phone')
 const phoneApiReady = computed(() => {
   return !needsPhoneExchangeApi.value
-    || (parsedPhoneApi.path !== '-' && phoneApiResponsePool.length > 0 && Boolean(phoneResponsePath.value))
+    || phoneApiPoolsConfirmed.value
 })
 const hasXcxCode = computed(() => parameterPool.some(param => param.id === 'wx-login-code'))
 const canGenerate = computed(() => {
@@ -140,31 +158,29 @@ const phoneCodeConfig = computed(() => JSON.stringify({
   phoneExchangeApi: needsPhoneExchangeApi.value
     ? {
         ...parsedPhoneApi,
-        requestPool: phoneApiRequestPool,
-        responsePool: phoneApiResponsePool,
-        phoneResponsePath: phoneResponsePath.value,
+        requestPool: selectedPhoneApiRequestPool.value,
+        responsePool: selectedPhoneApiResponsePool.value,
       }
     : null,
   authMode: authMode.value,
   authProcess: authMode.value === 'separate'
     ? {
-        reference: 'D:\\project\\lawyer-huasheng\\weapp\\pages\\login\\login.js',
-        branchField: 'app.public.bindFlag',
+        flowName: 'separate：登录、注册两个接口固定流程',
+        bindFlagResponsePath: separateBindFlagResponsePath.value,
+        publicMappings: { ...separatePublicMappings },
         steps: separateAuthProcess,
       }
     : {
-        reference: 'D:\\project\\tiansenrun-shop\\pages\\bind\\bind.js',
+        flowName: 'combined：登录注册共用一个接口固定流程',
         branchField: null,
-        excludedFlow: 'D:\\project\\tiansenrun-shop\\pages\\bind\\bind.wxml 中 wx:if="{{ showAvatarNicknameModal }}" 的底部头像昵称弹窗，以及 bind.js 中 submit/uploadUserInfoToServer 相关流程',
+        excludedFlow: '不实现头像昵称底部弹窗、showAvatarNicknameModal、submit、setUserInfoCancel、uploadUserInfoToServer、用户资料更新接口等补充资料流程',
         steps: combinedAuthProcess,
       },
   authApiInterfaces: selectedAuthApiInterfaces.value,
 }, null, 2))
 
-const phoneResponseOptions = computed(() => phoneApiResponsePool.map(param => ({
-  label: `${param.path} · ${param.description || param.type}`,
-  value: param.path,
-})))
+const selectedPhoneApiRequestPool = computed(() => phoneApiRequestPool.filter(param => param.enabled))
+const selectedPhoneApiResponsePool = computed(() => phoneApiResponsePool.filter(param => param.selected))
 const isReviewingPrevious = computed(() => activeStep.value < currentStep.value)
 const authDocumentDefinitions = computed(() => authMode.value === 'separate'
   ? [
@@ -174,34 +190,29 @@ const authDocumentDefinitions = computed(() => authMode.value === 'separate'
   : [{ key: 'combined' as const, label: '登录注册共用接口' }])
 const mergedFieldPoolOptions = computed(() => [
   ...parameterPool.map(param => ({ key: `auto:${param.name}`, label: `自动参数 / ${param.label} / ${param.name}` })),
-  ...phoneApiResponsePool.map(param => ({ key: `phone-response:${param.path}`, label: `换手机号响应 / ${param.path}` })),
+  ...selectedPhoneApiResponsePool.value.map(param => ({ key: `phone-response:${param.path}`, label: `换手机号响应 / ${param.path}` })),
 ])
 const selectedAuthApiInterfaces = computed(() => authApiInterfaces.map(api => ({
   ...api,
   requestPool: api.requestPool.filter(param => param.enabled),
   responsePool: api.responsePool.filter(param => param.selected),
 })))
+const loginApiInterface = computed(() => authApiInterfaces.find(api => api.role === 'login'))
+const loginResponseOptions = computed(() => {
+  return loginApiInterface.value?.responsePool.map(param => ({
+    label: `${param.path} · ${param.description || param.type}`,
+    value: param.path,
+  })) || []
+})
+const separatePublicMappingItems: Array<{ key: SeparatePublicMappingKey, label: string, target: string }> = [
+  { key: 'loginData', label: '登录数据', target: 'app.public.loginData' },
+  { key: 'token', label: 'Token', target: 'app.public.token' },
+  { key: 'bindFlag', label: '绑定状态', target: 'app.public.bindFlag' },
+  { key: 'openId', label: 'OpenID', target: 'app.public.openId' },
+]
 const authApiReady = computed(() => {
   const roles = authMode.value === 'separate' ? ['login', 'register'] : ['combined']
-  return roles.every(role => {
-    const api = authApiInterfaces.find(item => item.role === role)
-    const enabledRequestPool = api?.requestPool.filter(param => param.enabled) || []
-    const selectedResponsePool = api?.responsePool.filter(param => param.selected) || []
-    return api
-      && enabledRequestPool.length > 0
-      && selectedResponsePool.length > 0
-      && enabledRequestPool.every(param =>
-        Boolean(param.name.trim())
-        && Boolean(param.path.trim())
-        && Boolean(param.type.trim())
-        && (param.sourceMode === 'pool' ? Boolean(param.sourceKey) : Boolean(param.customSource.trim())),
-      )
-      && selectedResponsePool.every(param =>
-        Boolean(param.name.trim())
-        && Boolean(param.path.trim())
-        && Boolean(param.type.trim()),
-      )
-  })
+  return roles.every(role => authApiInterfaces.some(item => item.role === role))
 })
 
 watch(loginCredentialMode, () => {
@@ -254,10 +265,16 @@ function parsePhoneApiDocument() {
     parsedPhoneApi.method = result.method
     parsedPhoneApi.path = result.path
     parsedPhoneApi.summary = result.summary
-    phoneApiRequestPool.splice(0, phoneApiRequestPool.length, ...result.requestParams)
-    phoneApiResponsePool.splice(0, phoneApiResponsePool.length, ...result.responseParams)
-    phoneResponsePath.value = findPhoneResponsePath(result.responseParams)
-    phoneApiParserStatus.value = `已解析 ${result.method} ${result.path}：${result.requestParams.length} 个请求参数、${result.responseParams.length} 个响应参数`
+    phoneApiRequestPool.splice(0, phoneApiRequestPool.length, ...result.requestParams.map(param => ({
+      ...param,
+      enabled: isPhoneCodeRequestParam(param.name),
+    })))
+    phoneApiResponsePool.splice(0, phoneApiResponsePool.length, ...result.responseParams.map(param => ({
+      ...param,
+      selected: isPhoneLikeResponseParam(param.name),
+    })))
+    phoneApiPoolsConfirmed.value = false
+    phoneApiParserStatus.value = `已解析 ${result.method} ${result.path}：${result.requestParams.length} 个请求参数、${result.responseParams.length} 个响应参数，请确认两张参数池`
     generatedPrompt.value = ''
     ElMessage.success('code 换手机号接口解析完成')
   }
@@ -282,7 +299,7 @@ function generatePrompt() {
   }
 
   if (!phoneApiReady.value) {
-    ElMessage.warning('请先解析 code 换手机号接口，并选择返回的手机号字段')
+    ElMessage.warning('请先解析 code 换手机号接口，并确认请求参数池和响应参数池')
     return
   }
 
@@ -291,7 +308,7 @@ function generatePrompt() {
     return
   }
   if (!authApiReady.value) {
-    ElMessage.warning('请先解析登录注册接口，选择需要填写的请求参数和需要入池的响应参数')
+    ElMessage.warning('请先解析当前模式所需的登录注册接口')
     return
   }
 
@@ -318,25 +335,29 @@ ${figmaMcpText.value.trim()}
 - agree 为 true 时，由 open-type="getPhoneNumber" 触发 onAuthorizePhone，从 e.detail.code 读取手机号授权 code。
 - getPhoneNumber:ok 且 code 存在时，把 code 按下面配置写入字段池；不要把它误当成 wx.login 返回的 xcxCode。
 - loginCredentialMode=code 时，后续登录接口直接使用手机号授权 code。
-- loginCredentialMode=phone 时，先按 phoneExchangeApi.requestPool 调用 code 换手机号接口，再从 phoneResponsePath 读取手机号，供后续登录接口使用。
-- code 换手机号接口的请求参数、返回参数和手机号响应路径必须严格使用配置，不要猜测字段名。
+- loginCredentialMode=phone 时，先按 phoneExchangeApi.requestPool 调用 code 换手机号接口；未勾选的请求参数不要在业务代码中手动传，视为由项目请求封装自动携带或不需要传。
+- phoneExchangeApi.responsePool 是用户勾选的有用响应字段；可以为空。后续只允许读取这些响应路径，不要猜测字段名。
+- phoneExchangeApi.requestPool 和 phoneExchangeApi.responsePool 都允许为空数组；为空时不要为了凑字段而额外组装参数或读取响应。
 - 完成手机号处理后调用 getCode；getCode 内部调用 wx.login，校验 res.code，并以变量名 xcxCode、绑定表达式 res.code 写入参数池。
 - 手机号授权 code 来自 e.detail.code，xcxCode 来自 wx.login 的 res.code；两者必须作为两个独立字段保存，禁止覆盖或混用。
 - authMode=separate 时分别实现登录接口与注册接口，并参考配置中的 role=login/register；authMode=combined 时只调用 role=combined 的共用接口。
-- separate 模式参考 D:\\project\\lawyer-huasheng\\weapp\\pages\\login\\login.js 完成完整后续流程：getCode 成功后读取 app.public.bindFlag；bindFlag=true 调 role=login，bindFlag=false 调 role=register。
-- separate 模式下登录/注册成功后，按项目既有写法保存 app.public.loginData、app.public.token、app.public.bindFlag、app.public.openId；如果 token 存在则调用 getUserInfo 并写入 app.public.userInfo，随后 wx.hideLoading 并 linkTo；如果没有 token，也要 wx.hideLoading 并 linkTo。
+- separate 模式使用固定流程：getCode 成功后先调用 role=login 登录接口；如果 separateBindFlagResponsePath 已配置，就按该字段读取绑定状态；如果未配置，请在目标项目中根据登录接口实际返回补齐 TODO，不要写死旧项目字段。
+- separate 模式下登录/注册成功后，优先按 separatePublicMappings 从响应中取值并保存 app.public.loginData、app.public.token、app.public.bindFlag、app.public.openId；未配置或不完整的映射要保留 TODO，结合目标项目接口实际返回补齐，不要写死 access_token、bindFlag、openid 等旧字段路径。
+- separatePublicMappings 的候选字段来自登录接口解析出的响应字段；如果注册接口返回结构不同，仍以这组映射的业务含义为准，在目标项目中从注册响应中寻找等价字段或按接口文档补齐字段。
+- token 判断优先使用 separatePublicMappings.token 对应的返回值；如果 token 映射未配置，请在目标项目中根据实际 token 字段补齐 TODO。token 存在则调用 getUserInfo 并写入 app.public.userInfo，随后 wx.hideLoading 并 linkTo；如果没有 token，也要 wx.hideLoading 并 linkTo。
 - separate 模式下注册接口 fail 且 msg 包含“已经绑定过第三方用户”时，不要直接失败；必须重新调用 wx.login 获取新的 xcxCode，再调用登录接口。wx.login 失败时 wx.hideLoading 并提示微信登录失败。
 - separate 模式下所有 fail/early return 分支都要正确 wx.hideLoading，避免原生 loading 悬挂；getUserInfo 失败时登录已成功，仍然 wx.hideLoading 并 linkTo。
-- combined 模式参考 D:\\project\\tiansenrun-shop\\pages\\bind\\bind.js：getPhoneNumber:ok 后先校验协议，把 e.detail.code 写入 phoneCode；再调用 getCode，通过 wx.login 获取 codeXcx；最后调用 role=combined 的登录注册共用接口。
-- combined 模式请求参数参考 bind.js 的 loginData：phoneCode 来自手机号授权 code，codeXcx 来自 wx.login，clientId/grantType 来自项目配置，inviteCode 若目标项目存在则从 app.public.inviteCode 带入；实际字段名以 authApiInterfaces.requestPool 中用户勾选和手动补充的配置为准。
+- combined 模式使用固定流程：getPhoneNumber:ok 后先校验协议，把 e.detail.code 写入 phoneCode；再调用 getCode，通过 wx.login 获取 codeXcx；最后调用 role=combined 的登录注册共用接口。
+- combined 模式请求参数固定含义：phoneCode 来自手机号授权 code，codeXcx 来自 wx.login，clientId/grantType 来自项目配置，inviteCode 若目标项目存在则从 app.public.inviteCode 带入；实际字段名以 authApiInterfaces.requestPool 中用户勾选和手动补充的配置为准。
 - combined 模式接口成功后，保存 app.public.loginData、app.public.bingFlag 或 bindFlag、app.public.token、app.public.needEditInfo；如果 token 存在，调用 getUserInfo 或 /app/user/self 获取当前用户信息并写入 app.public.userInfo，随后 wx.hideLoading 并 linkTo；如果 token 不存在，也要 wx.hideLoading 并 linkTo。
-- combined 模式明确排除 bind.wxml 中 <view class="bottom-modal" wx:if="{{ showAvatarNicknameModal }}"> 头像昵称底部弹窗，以及 bind.js 中 showAvatarNicknameModal、submit、setUserInfoCancel、uploadUserInfoToServer、/app/user/update 相关流程；不要因为 needEditInfo 为 true 就实现或打开该弹窗。
+- combined 模式明确排除头像昵称底部弹窗、showAvatarNicknameModal、submit、setUserInfoCancel、uploadUserInfoToServer、用户资料更新接口等补充资料流程；不要因为 needEditInfo 为 true 就实现或打开该弹窗。
 - combined 模式下所有 fail/early return 分支都要正确 wx.hideLoading，避免原生 loading 悬挂。
+- Request Pool、Response Pool、separateBindFlagResponsePath、separatePublicMappings 都允许为空或不完整；已配置完整的项按配置执行，未配置完整的项不要硬猜，保留 TODO 或结合目标项目实际接口补齐。
 - authApiInterfaces 中的 requestPool 只包含用户勾选为“需要填写”的请求参数；未勾选的请求参数不要组装进请求。
-- 每个被勾选的认证接口请求参数必须按 sourceMode 取值：pool 从字段池 sourceKey 获取，custom 根据 customSource 的自然语言说明去目标项目中查找；不要凭空补值。
-- authApiInterfaces 中的 responsePool 只包含用户勾选为“放入响应参数池”的响应参数；后续只按这些响应路径读取返回结果。
-- 如果接口文档缺少必要字段，用户会以 manual=true 的参数手动补充；手动补充项与解析项同等有效，必须按配置中的 name/path/type/description/sourceMode/customSource 执行，不要忽略。
-- authProcess 是认证后续流程的强约束：authMode=separate 时必须完整实现分流、登录、注册、注册冲突重试登录、保存登录态、拉用户信息和跳转；authMode=combined 时按 tiansenrun-shop 的共用接口流程执行，并严格跳过 excludedFlow。
+- 被勾选且配置完整的认证接口请求参数按 sourceMode 取值：pool 从字段池 sourceKey 获取，custom 根据 customSource 的自然语言说明去目标项目中查找；配置不完整时不要凭空补值。
+- authApiInterfaces 中的 responsePool 只包含用户勾选为“放入响应参数池”的响应参数；已配置的后续读取按这些响应路径执行，空数组代表本阶段没有指定可用响应字段。
+- 如果接口文档缺少字段，用户可以用 manual=true 的参数手动补充；手动补充项与解析项同等有效。手动项也允许暂时不完整，不完整时保留 TODO 或结合目标项目补齐。
+- authProcess 是认证后续流程的强约束：authMode=separate 时必须完整实现分流、登录、注册、注册冲突重试登录、保存登录态、拉用户信息和跳转；authMode=combined 时按共用接口固定流程执行，并严格跳过 excludedFlow。
 
 字段池配置：
 
@@ -397,9 +418,13 @@ function completeFigmaStep() {
 }
 
 function completeCredentialStep() {
-  if (needsPhoneExchangeApi.value && !phoneApiReady.value) {
-    ElMessage.warning('请先解析 code 换手机号接口，并选择手机号响应字段')
-    return
+  if (needsPhoneExchangeApi.value) {
+    if (parsedPhoneApi.path === '-') {
+      ElMessage.warning('请先解析 code 换手机号接口')
+      return
+    }
+
+    phoneApiPoolsConfirmed.value = true
   }
 
   advanceStep(3)
@@ -446,7 +471,7 @@ function parseAuthApiDocument(role: 'login' | 'register' | 'combined') {
     })
     const responsePool = result.responseParams.map(param => ({
       ...param,
-      selected: false,
+      selected: isDefaultAuthResponseParam(param.name),
     }))
     const api: AuthApiInterface = {
       id: `auth-${role}`,
@@ -462,6 +487,9 @@ function parseAuthApiDocument(role: 'login' | 'register' | 'combined') {
     if (index >= 0) authApiInterfaces.splice(index, 1, api)
     else authApiInterfaces.push(api)
     authApiStatuses[role] = `已解析 ${result.method} ${result.path}，请确认请求参数和响应入池字段`
+    if (role === 'login') {
+      applyDefaultSeparateMappings(responsePool)
+    }
     generatedPrompt.value = ''
   }
   catch (error) {
@@ -473,6 +501,9 @@ function parseAuthApiDocument(role: 'login' | 'register' | 'combined') {
 function invalidateAuthApi(role: 'login' | 'register' | 'combined') {
   const index = authApiInterfaces.findIndex(item => item.role === role)
   if (index >= 0) authApiInterfaces.splice(index, 1)
+  if (role === 'login') {
+    resetSeparateMappings()
+  }
   authApiStatuses[role] = '等待重新解析'
   generatedPrompt.value = ''
 }
@@ -515,13 +546,14 @@ function addManualAuthResponseParam(api: AuthApiInterface) {
 function findDefaultAuthSource(name: string) {
   const exact = parameterPool.find(param => param.name.toLowerCase() === name.toLowerCase())
   if (exact) return `auto:${exact.name}`
-  if (/^(phone|phonenumber|mobile|purePhoneNumber)$/i.test(name) && phoneResponsePath.value) return `phone-response:${phoneResponsePath.value}`
+  const selectedPhoneParam = selectedPhoneApiResponsePool.value.find(param => /^(phone|phonenumber|mobile|purePhoneNumber)$/i.test(param.name))
+  if (/^(phone|phonenumber|mobile|purePhoneNumber)$/i.test(name) && selectedPhoneParam) return `phone-response:${selectedPhoneParam.path}`
   return ''
 }
 
 function completeAuthApiStep() {
   if (!authApiReady.value) {
-    ElMessage.warning('请解析所需接口，勾选要填写的请求参数并配置取值，再勾选要放入响应参数池的返回字段')
+    ElMessage.warning('请先解析当前模式所需的接口')
     return
   }
   advanceStep(5)
@@ -566,13 +598,14 @@ function resetForm() {
   authApiStatuses.register = '等待解析'
   authApiStatuses.combined = '等待解析'
   authApiInterfaces.splice(0, authApiInterfaces.length)
+  resetSeparateMappings()
   currentStep.value = 1
   activeStep.value = 1
 }
 
 function resetPhoneApiParse() {
   phoneApiParserStatus.value = '等待粘贴 OpenAPI/Swagger'
-  phoneResponsePath.value = ''
+  phoneApiPoolsConfirmed.value = false
   parsedPhoneApi.method = '-'
   parsedPhoneApi.path = '-'
   parsedPhoneApi.summary = '未解析'
@@ -735,20 +768,46 @@ function createApiParameter(
 }
 
 function requestSource(name: string) {
-  return /^(code|phoneCode|phone_code)$/i.test(name)
+  return isPhoneCodeRequestParam(name)
     ? '字段池 / 微信手机号授权 code'
     : '待配置'
 }
 
-function findPhoneResponsePath(params: ApiParameter[]) {
-  const preferredNames = ['purePhoneNumber', 'phoneNumber', 'phonenumber', 'phone', 'mobile']
+function isPhoneCodeRequestParam(name: string) {
+  return /^(code|phoneCode|phone_code)$/i.test(name)
+}
 
-  for (const name of preferredNames) {
-    const preferred = params.find(param => param.name.toLowerCase() === name.toLowerCase())
-    if (preferred) return preferred.path
-  }
+function isPhoneLikeResponseParam(name: string) {
+  return /^(purePhoneNumber|phoneNumber|phonenumber|phone|mobile)$/i.test(name)
+}
 
-  return ''
+function isDefaultAuthResponseParam(name: string) {
+  return /^(data|loginData|access_token|token|bindFlag|bingFlag|openid|openId)$/i.test(name)
+}
+
+function applyDefaultSeparateMappings(params: AuthApiResponseParameter[]) {
+  separateBindFlagResponsePath.value = findResponsePathByNames(params, ['bindFlag', 'bingFlag'])
+  separatePublicMappings.loginData = findResponsePathByNames(params, ['data', 'loginData']) || ''
+  separatePublicMappings.token = findResponsePathByNames(params, ['access_token', 'token']) || ''
+  separatePublicMappings.bindFlag = separateBindFlagResponsePath.value
+  separatePublicMappings.openId = findResponsePathByNames(params, ['openid', 'openId']) || ''
+}
+
+function findResponsePathByNames(params: AuthApiResponseParameter[], names: string[]) {
+  return params.find(param => names.some(name => param.name.toLowerCase() === name.toLowerCase()))?.path || ''
+}
+
+function resetSeparateMappings() {
+  separateBindFlagResponsePath.value = ''
+  separatePublicMappings.loginData = ''
+  separatePublicMappings.token = ''
+  separatePublicMappings.bindFlag = ''
+  separatePublicMappings.openId = ''
+}
+
+function markPhoneApiPoolsDirty() {
+  phoneApiPoolsConfirmed.value = false
+  generatedPrompt.value = ''
 }
 
 function extractOpenApiSource(source: string) {
@@ -984,7 +1043,7 @@ async function copyPrompt() {
 
       <div v-else class="phone-api-workspace">
         <el-alert
-          title="粘贴 code 换手机号接口的 OpenAPI/Swagger。解析后将生成请求参数池、响应参数池，并选择后续登录接口使用的手机号字段。"
+          title="粘贴 code 换手机号接口的 OpenAPI/Swagger。解析后请勾选业务代码需要传的请求参数，以及后续有用的响应字段；两边都允许不勾选。"
           type="info"
           :closable="false"
           show-icon
@@ -1019,10 +1078,10 @@ async function copyPrompt() {
               {{ parsedPhoneApi.summary }}
             </el-descriptions-item>
             <el-descriptions-item label="请求参数">
-              {{ phoneApiRequestPool.length }} 个
+              {{ phoneApiRequestPool.length }} 个，业务传参 {{ selectedPhoneApiRequestPool.length }} 个
             </el-descriptions-item>
             <el-descriptions-item label="响应参数">
-              {{ phoneApiResponsePool.length }} 个
+              {{ phoneApiResponsePool.length }} 个，有用字段 {{ selectedPhoneApiResponsePool.length }} 个
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -1032,9 +1091,14 @@ async function copyPrompt() {
           <strong>字段池：code 换手机号接口请求参数</strong>
         </div>
         <el-table :data="phoneApiRequestPool" border empty-text="解析接口文档后显示请求参数">
+          <el-table-column label="业务传参" width="110" align="center">
+            <template #default="{ row }">
+              <el-checkbox v-model="row.enabled" @change="markPhoneApiPoolsDirty" />
+            </template>
+          </el-table-column>
           <el-table-column prop="name" label="参数名" min-width="140" />
           <el-table-column prop="type" label="类型" width="110" />
-          <el-table-column label="必填" width="90">
+          <el-table-column label="接口必填" width="100">
             <template #default="{ row }">
               <el-tag :type="row.required ? 'danger' : 'info'">
                 {{ row.required ? '是' : '否' }}
@@ -1044,39 +1108,37 @@ async function copyPrompt() {
           <el-table-column prop="description" label="说明" min-width="200" />
           <el-table-column label="取值来源" min-width="240">
             <template #default="{ row }">
-              <el-input v-model="row.source" />
+              <el-input v-model="row.source" :disabled="!row.enabled" @input="markPhoneApiPoolsDirty" />
             </template>
           </el-table-column>
         </el-table>
+        <p class="table-hint">
+          未勾选的请求参数不会出现在后续业务代码传参配置中，可由项目请求封装自动携带，或视为本流程不需要手动传。
+        </p>
 
         <div class="section-title">
           <span>Response Pool</span>
-          <strong>字段池：code 换手机号接口返回参数</strong>
+          <strong>字段池：code 换手机号接口有用返回参数</strong>
         </div>
         <el-table :data="phoneApiResponsePool" border empty-text="解析接口文档后显示返回参数">
+          <el-table-column label="有用" width="90" align="center">
+            <template #default="{ row }">
+              <el-checkbox v-model="row.selected" @change="markPhoneApiPoolsDirty" />
+            </template>
+          </el-table-column>
           <el-table-column prop="path" label="响应路径" min-width="180" />
           <el-table-column prop="name" label="字段名" min-width="140" />
           <el-table-column prop="type" label="类型" width="110" />
           <el-table-column prop="description" label="说明" min-width="220" />
         </el-table>
-
-        <el-form class="phone-field-form" label-position="top">
-          <el-form-item label="登录接口使用的手机号响应字段">
-            <el-select v-model="phoneResponsePath" filterable placeholder="请选择返回参数中的手机号字段">
-              <el-option
-                v-for="option in phoneResponseOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </el-select>
-          </el-form-item>
-        </el-form>
+        <p class="table-hint">
+          只把勾选字段放入后续响应参数池；如果登录接口不需要 code 换手机号结果，也可以一个都不选。
+        </p>
       </div>
 
       <div class="step-actions">
-        <el-button type="primary" :disabled="!phoneApiReady" @click="completeCredentialStep">
-          确认选择并进入下一步
+        <el-button type="primary" :disabled="needsPhoneExchangeApi && parsedPhoneApi.path === '-'" @click="completeCredentialStep">
+          确认两张参数池并进入下一步
         </el-button>
       </div>
     </el-card>
@@ -1096,7 +1158,7 @@ async function copyPrompt() {
       </template>
 
       <el-alert
-        title="参考 login.js：getCode 调用 wx.login，success 中校验 res.code，再以 xcxCode 写入参数池。该值与手机号授权 code 完全独立。"
+        title="固定 getCode 规则：调用 wx.login，success 中校验 res.code，再以 xcxCode 写入参数池。该值与手机号授权 code 完全独立。"
         type="info"
         :closable="false"
         show-icon
@@ -1141,7 +1203,7 @@ async function copyPrompt() {
       </el-radio-group>
 
       <el-alert
-        title="解析结果只是候选项：请勾选真正需要填写的请求参数，并勾选要放入响应参数池的返回字段；接口文档缺字段时可手动添加。"
+        title="解析结果只是候选项：Request Pool、Response Pool、登录响应映射都允许留空或不完整；生成提示词会把当前状态带到目标项目。"
         type="warning"
         :closable="false"
         show-icon
@@ -1155,8 +1217,8 @@ async function copyPrompt() {
         show-icon
       >
         <template #title>
-          分开接口后续流程将参考 lawyer-huasheng/login.js：getCode 后按 app.public.bindFlag 分流登录或注册；注册冲突时刷新 xcxCode 再登录；成功后保存登录态、拉用户信息并跳转。
-          如果接口文档缺少 access_token、bindFlag、openid、user 等后续流程字段，请手动添加到响应参数池。
+          分开接口使用固定流程：getCode 后先调登录接口，再按下方选择的绑定状态响应字段分流登录或注册；注册冲突时刷新 xcxCode 再登录；成功后保存登录态、拉用户信息并跳转。
+          下方映射可以留空或不完整；若留空，生成提示词会要求目标项目根据接口实际返回补齐。
         </template>
       </el-alert>
 
@@ -1176,7 +1238,7 @@ async function copyPrompt() {
         show-icon
       >
         <template #title>
-          共用接口后续流程将参考 tiansenrun-shop/bind.js：phoneCode + codeXcx 调用同一个登录接口，成功后保存登录态、拉用户信息并跳转；不纳入 showAvatarNicknameModal 头像昵称底部弹窗。
+          共用接口使用固定流程：phoneCode + codeXcx 调用同一个登录接口，成功后保存登录态、拉用户信息并跳转；不纳入头像昵称底部弹窗。
         </template>
       </el-alert>
 
@@ -1217,7 +1279,7 @@ async function copyPrompt() {
 
           <div class="section-title">
             <span>Request Pool</span>
-            <strong>先选择需要填写的请求参数，再配置取值</strong>
+            <strong>可选择需要业务代码填写的请求参数，取值允许暂不完整</strong>
           </div>
           <el-table :data="api.requestPool" border>
             <el-table-column label="需要填" width="92" align="center">
@@ -1278,7 +1340,7 @@ async function copyPrompt() {
 
           <div class="section-title">
             <span>Response Pool</span>
-            <strong>选择要放入响应参数池的字段</strong>
+            <strong>可选择后续有用的响应字段，也可以暂时不选</strong>
           </div>
           <el-table :data="api.responsePool" border>
             <el-table-column label="入池" width="80" align="center">
@@ -1318,9 +1380,60 @@ async function copyPrompt() {
         </el-collapse-item>
       </el-collapse>
 
+      <div v-if="authMode === 'separate' && loginApiInterface" class="mapping-panel">
+        <div class="section-title">
+          <span>Login Response Mapping</span>
+          <strong>登录接口返回值映射</strong>
+        </div>
+        <el-alert
+          title="下拉项来自登录接口解析出的响应字段，可以先留空。目标项目执行时会按当前映射使用，空项需要结合接口实际返回补齐。"
+          type="warning"
+          :closable="false"
+          show-icon
+        />
+        <el-form class="mapping-form" label-position="top">
+          <el-form-item label="用于判断是否已绑定的响应字段">
+            <el-select
+              v-model="separateBindFlagResponsePath"
+              filterable
+              placeholder="请选择登录接口返回中的绑定状态字段"
+              @change="generatedPrompt = ''"
+            >
+              <el-option
+                v-for="option in loginResponseOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <el-table :data="separatePublicMappingItems" border>
+          <el-table-column prop="target" label="写入位置" min-width="180" />
+          <el-table-column prop="label" label="业务含义" min-width="140" />
+          <el-table-column label="登录接口响应字段" min-width="280">
+            <template #default="{ row }">
+              <el-select
+                v-model="separatePublicMappings[row.key]"
+                filterable
+                placeholder="请选择响应字段"
+                @change="generatedPrompt = ''"
+              >
+                <el-option
+                  v-for="option in loginResponseOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
       <div class="step-actions">
         <el-button type="primary" :disabled="!authApiReady" @click="completeAuthApiStep">
-          完成接口配置并进入下一步
+          确认接口解析并进入下一步
         </el-button>
       </div>
     </el-card>
@@ -1399,7 +1512,7 @@ async function copyPrompt() {
         <div class="contract-box">
           <div class="contract-title">
             <span>保留事件</span>
-            <strong>login.js 接口点</strong>
+            <strong>页面逻辑接口点</strong>
           </div>
           <div class="event-list">
             <el-tag effect="plain">
@@ -1593,18 +1706,32 @@ h1 {
   gap: 10px;
 }
 
-.phone-field-form {
-  max-width: 620px;
-}
-
-.phone-field-form :deep(.el-select) {
-  width: 100%;
+.table-hint {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .auth-api-block {
   display: grid;
   gap: 12px;
   margin-top: 16px;
+}
+
+.mapping-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.mapping-form {
+  max-width: 640px;
+}
+
+.mapping-form :deep(.el-select),
+.mapping-panel :deep(.el-select) {
+  width: 100%;
 }
 
 .interface-collapse {
