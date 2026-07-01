@@ -63,7 +63,16 @@ interface AuthApiInterface {
   responsePool: AuthApiResponseParameter[]
 }
 
+interface UserInfoApiInterface {
+  method: string
+  path: string
+  summary: string
+  requestPool: AuthApiParameter[]
+  responsePool: AuthApiResponseParameter[]
+}
+
 type SeparatePublicMappingKey = 'loginData' | 'token' | 'bindFlag' | 'openId'
+type CombinedPublicMappingKey = 'loginData' | 'token' | 'bindFlag' | 'needEditInfo'
 
 const defaultFigmaMcpText = `Implement this design from Figma.
 @https://www.figma.com/design/iqDtxgOfQMsodBHA9QFQso/%E5%BE%8B%E5%B8%88%E5%B0%8F%E7%A8%8B%E5%BA%8F?node-id=140-3451&m=dev`
@@ -90,12 +99,28 @@ const authMode = ref<'separate' | 'combined'>('separate')
 const authApiDocuments = reactive<Record<'login' | 'register' | 'combined', string>>({ login: '', register: '', combined: '' })
 const authApiStatuses = reactive<Record<'login' | 'register' | 'combined', string>>({ login: '等待解析', register: '等待解析', combined: '等待解析' })
 const authApiInterfaces = reactive<AuthApiInterface[]>([])
+const userInfoApiDocument = ref('')
+const userInfoApiStatus = ref('等待解析')
+const userInfoApi = reactive<UserInfoApiInterface>({
+  method: '-',
+  path: '-',
+  summary: '未解析',
+  requestPool: [],
+  responsePool: [],
+})
+const userInfoResponsePath = ref('')
 const separateBindFlagResponsePath = ref('')
 const separatePublicMappings = reactive<Record<SeparatePublicMappingKey, string>>({
   loginData: '',
   token: '',
   bindFlag: '',
   openId: '',
+})
+const combinedPublicMappings = reactive<Record<CombinedPublicMappingKey, string>>({
+  loginData: '',
+  token: '',
+  bindFlag: '',
+  needEditInfo: '',
 })
 const currentStep = ref(1)
 const activeStep = ref(1)
@@ -114,9 +139,9 @@ const combinedAuthProcess = [
   'getPhoneNumber:ok 后校验协议，读取 e.detail.code 并写入 phoneCode',
   '调用 getCode，通过 wx.login 获取 codeXcx，不要与手机号授权 code 混用',
   '请求 role=combined 的登录注册共用接口，参数包含 phoneCode、codeXcx、clientId、grantType，若项目存在 inviteCode 则一并带上',
-  '接口成功后保存 app.public.loginData、app.public.bingFlag 或 bindFlag、app.public.token、app.public.needEditInfo',
-  '如果 token 存在，调用 getUserInfo 或 /app/user/self 获取当前用户信息，写入 app.public.userInfo 后 linkTo',
-  '如果 token 不存在，也执行 linkTo',
+  '接口成功后按 combinedPublicMappings 从接口返回值中取值并保存 app.public.loginData、app.public.bindFlag、app.public.token、app.public.needEditInfo',
+  'token 判断使用 combinedPublicMappings.token 对应的返回值；token 存在时调用 getUserInfo 或 /app/user/self 获取当前用户信息，写入 app.public.userInfo 后 linkTo',
+  'token 不存在或 token 映射未配置时，也要保留 TODO 并按项目实际接口返回完成 linkTo 分支',
   '不纳入 showAvatarNicknameModal、头像昵称弹窗、submit、uploadUserInfoToServer、/app/user/update 这一段流程',
   '所有失败分支必须调用 wx.hideLoading，避免原生 loading 悬挂',
 ]
@@ -127,8 +152,9 @@ const flowSteps = [
   { id: 3, title: '选择 code 使用方式' },
   { id: 4, title: '执行 getCode' },
   { id: 5, title: '解析登录注册接口' },
-  { id: 6, title: '生成 Skill 提示词' },
-  { id: 7, title: '复制并执行' },
+  { id: 6, title: '解析 getUserInfo 接口' },
+  { id: 7, title: '生成 Skill 提示词' },
+  { id: 8, title: '复制并执行' },
 ]
 
 const needsPhoneExchangeApi = computed(() => loginCredentialMode.value === 'phone')
@@ -138,7 +164,7 @@ const phoneApiReady = computed(() => {
 })
 const hasXcxCode = computed(() => parameterPool.some(param => param.id === 'wx-login-code'))
 const canGenerate = computed(() => {
-  return figmaMcpText.value.trim().length > 0 && parameterPool.length > 0 && phoneApiReady.value && hasXcxCode.value && authApiReady.value
+  return figmaMcpText.value.trim().length > 0 && parameterPool.length > 0 && phoneApiReady.value && hasXcxCode.value && authApiReady.value && userInfoApiReady.value
 })
 
 const phoneCodeConfig = computed(() => JSON.stringify({
@@ -149,6 +175,7 @@ const phoneCodeConfig = computed(() => JSON.stringify({
     '调用 getCode，通过 wx.login 获取 xcxCode 并写入参数池',
     '按 authMode 解析登录注册接口，选择需要填写的请求参数和需要入池的响应参数',
     '按 authProcess 完成登录/注册后续流程',
+    '解析 getUserInfo 接口，配置请求参数和 app.public.userInfo 响应字段',
     '生成最终实现提示词',
   ],
   trigger: 'onAuthorizePhone',
@@ -172,15 +199,25 @@ const phoneCodeConfig = computed(() => JSON.stringify({
       }
     : {
         flowName: 'combined：登录注册共用一个接口固定流程',
-        branchField: null,
+        publicMappings: { ...combinedPublicMappings },
         excludedFlow: '不实现头像昵称底部弹窗、showAvatarNicknameModal、submit、setUserInfoCancel、uploadUserInfoToServer、用户资料更新接口等补充资料流程',
         steps: combinedAuthProcess,
       },
   authApiInterfaces: selectedAuthApiInterfaces.value,
+  userInfoApi: userInfoApiReady.value
+    ? {
+        ...userInfoApi,
+        requestPool: selectedUserInfoRequestPool.value,
+        responsePool: selectedUserInfoResponsePool.value,
+        userInfoResponsePath: userInfoResponsePath.value,
+      }
+    : null,
 }, null, 2))
 
 const selectedPhoneApiRequestPool = computed(() => phoneApiRequestPool.filter(param => param.enabled))
 const selectedPhoneApiResponsePool = computed(() => phoneApiResponsePool.filter(param => param.selected))
+const selectedUserInfoRequestPool = computed(() => userInfoApi.requestPool.filter(param => param.enabled))
+const selectedUserInfoResponsePool = computed(() => userInfoApi.responsePool.filter(param => param.selected))
 const isReviewingPrevious = computed(() => activeStep.value < currentStep.value)
 const authDocumentDefinitions = computed(() => authMode.value === 'separate'
   ? [
@@ -198,8 +235,15 @@ const selectedAuthApiInterfaces = computed(() => authApiInterfaces.map(api => ({
   responsePool: api.responsePool.filter(param => param.selected),
 })))
 const loginApiInterface = computed(() => authApiInterfaces.find(api => api.role === 'login'))
+const combinedApiInterface = computed(() => authApiInterfaces.find(api => api.role === 'combined'))
 const loginResponseOptions = computed(() => {
   return loginApiInterface.value?.responsePool.map(param => ({
+    label: `${param.path} · ${param.description || param.type}`,
+    value: param.path,
+  })) || []
+})
+const combinedResponseOptions = computed(() => {
+  return combinedApiInterface.value?.responsePool.map(param => ({
     label: `${param.path} · ${param.description || param.type}`,
     value: param.path,
   })) || []
@@ -210,9 +254,23 @@ const separatePublicMappingItems: Array<{ key: SeparatePublicMappingKey, label: 
   { key: 'bindFlag', label: '绑定状态', target: 'app.public.bindFlag' },
   { key: 'openId', label: 'OpenID', target: 'app.public.openId' },
 ]
+const combinedPublicMappingItems: Array<{ key: CombinedPublicMappingKey, label: string, target: string }> = [
+  { key: 'loginData', label: '登录数据', target: 'app.public.loginData' },
+  { key: 'token', label: 'Token', target: 'app.public.token' },
+  { key: 'bindFlag', label: '绑定状态', target: 'app.public.bindFlag' },
+  { key: 'needEditInfo', label: '是否需要补充资料', target: 'app.public.needEditInfo' },
+]
 const authApiReady = computed(() => {
   const roles = authMode.value === 'separate' ? ['login', 'register'] : ['combined']
   return roles.every(role => authApiInterfaces.some(item => item.role === role))
+})
+const userInfoResponseOptions = computed(() => userInfoApi.responsePool.map(param => ({
+  label: `${param.path} · ${param.description || param.type}`,
+  value: param.path,
+})))
+const userInfoApiReady = computed(() => {
+  return userInfoApi.path !== '-'
+    && Boolean(userInfoResponsePath.value)
 })
 
 watch(loginCredentialMode, () => {
@@ -227,7 +285,17 @@ watch(phoneApiDocument, () => {
 
 watch(authMode, () => {
   authApiInterfaces.splice(0, authApiInterfaces.length)
+  userInfoApiDocument.value = ''
+  resetUserInfoApiParse()
+  resetSeparateMappings()
+  resetCombinedMappings()
   generatedPrompt.value = ''
+})
+
+watch(userInfoApiDocument, () => {
+  if (userInfoApi.path !== '-') {
+    resetUserInfoApiParse()
+  }
 })
 
 function authorizePhoneLogin() {
@@ -286,7 +354,7 @@ function parsePhoneApiDocument() {
 }
 
 function generatePrompt() {
-  if (currentStep.value !== 6 || activeStep.value !== 6) return
+  if (currentStep.value !== 7 || activeStep.value !== 7) return
 
   if (!figmaMcpText.value.trim()) {
     ElMessage.warning('请先粘贴 Figma MCP 内容')
@@ -309,6 +377,11 @@ function generatePrompt() {
   }
   if (!authApiReady.value) {
     ElMessage.warning('请先解析当前模式所需的登录注册接口')
+    return
+  }
+
+  if (!userInfoApiReady.value) {
+    ElMessage.warning('请先解析 getUserInfo 接口，并选择写入 app.public.userInfo 的响应字段')
     return
   }
 
@@ -349,16 +422,23 @@ ${figmaMcpText.value.trim()}
 - separate 模式下所有 fail/early return 分支都要正确 wx.hideLoading，避免原生 loading 悬挂；getUserInfo 失败时登录已成功，仍然 wx.hideLoading 并 linkTo。
 - combined 模式使用固定流程：getPhoneNumber:ok 后先校验协议，把 e.detail.code 写入 phoneCode；再调用 getCode，通过 wx.login 获取 codeXcx；最后调用 role=combined 的登录注册共用接口。
 - combined 模式请求参数固定含义：phoneCode 来自手机号授权 code，codeXcx 来自 wx.login，clientId/grantType 来自项目配置，inviteCode 若目标项目存在则从 app.public.inviteCode 带入；实际字段名以 authApiInterfaces.requestPool 中用户勾选和手动补充的配置为准。
-- combined 模式接口成功后，保存 app.public.loginData、app.public.bingFlag 或 bindFlag、app.public.token、app.public.needEditInfo；如果 token 存在，调用 getUserInfo 或 /app/user/self 获取当前用户信息并写入 app.public.userInfo，随后 wx.hideLoading 并 linkTo；如果 token 不存在，也要 wx.hideLoading 并 linkTo。
-- combined 模式明确排除头像昵称底部弹窗、showAvatarNicknameModal、submit、setUserInfoCancel、uploadUserInfoToServer、用户资料更新接口等补充资料流程；不要因为 needEditInfo 为 true 就实现或打开该弹窗。
+- combined 模式接口成功后，必须按 authProcess.publicMappings 从 role=combined 的 responsePool 响应路径中取值，再保存 app.public.loginData、app.public.token、app.public.bindFlag、app.public.needEditInfo；不要写死 token、bindFlag、bingFlag、needEditInfo 等字段名。
+- combined 模式 token 判断优先使用 authProcess.publicMappings.token 对应的返回值；如果 token 映射未配置，请在目标项目中根据实际 token 字段补齐 TODO。token 存在则调用 getUserInfo 或 /app/user/self 获取当前用户信息并写入 app.public.userInfo，随后 wx.hideLoading 并 linkTo；如果 token 不存在，也要 wx.hideLoading 并 linkTo。
+- combined 模式 needEditInfo 只允许按 authProcess.publicMappings.needEditInfo 读取并保存到 app.public.needEditInfo；即使它为 true，也不要实现或打开头像昵称弹窗。
+- combined 模式明确排除头像昵称底部弹窗、showAvatarNicknameModal、submit、setUserInfoCancel、uploadUserInfoToServer、用户资料更新接口等补充资料流程。
 - combined 模式下所有 fail/early return 分支都要正确 wx.hideLoading，避免原生 loading 悬挂。
 - Request Pool、Response Pool、separateBindFlagResponsePath、separatePublicMappings 都允许为空或不完整；已配置完整的项按配置执行，未配置完整的项不要硬猜，保留 TODO 或结合目标项目实际接口补齐。
 - authApiInterfaces 中的 requestPool 只包含用户勾选为“需要填写”的请求参数；未勾选的请求参数不要组装进请求。
 - 被勾选且配置完整的认证接口请求参数按 sourceMode 取值：pool 从字段池 sourceKey 获取，custom 根据 customSource 的自然语言说明去目标项目中查找；配置不完整时不要凭空补值。
 - authApiInterfaces 中的 responsePool 只包含用户勾选为“放入响应参数池”的响应参数；已配置的后续读取按这些响应路径执行，空数组代表本阶段没有指定可用响应字段。
 - 如果接口文档缺少字段，用户可以用 manual=true 的参数手动补充；手动补充项与解析项同等有效。手动项也允许暂时不完整，不完整时保留 TODO 或结合目标项目补齐。
-- authProcess 是认证后续流程的强约束：authMode=separate 时必须完整实现分流、登录、注册、注册冲突重试登录、保存登录态、拉用户信息和跳转；authMode=combined 时按共用接口固定流程执行，并严格跳过 excludedFlow。
+- authProcess 是认证后续流程的强约束：authMode=separate 时必须完整实现分流、登录、注册、注册冲突重试登录、保存登录态、拉用户信息和跳转；authMode=combined 时按共用接口固定流程执行，所有登录态字段均从 publicMappings 配置的响应路径读取，并严格跳过 excludedFlow。
 
+- getUserInfo 接口按 userInfoApi 配置实现；登录或注册成功且 token 存在时调用，token 不存在时不要强行请求，直接 wx.hideLoading 并 linkTo。
+- userInfoApi.requestPool 只包含用户勾选的请求参数；取值按 sourceMode 执行，pool 从字段池读取，custom 根据用户输入说明到目标项目中查找。若文档没有写到授权头、token 或用户信息字段，优先保留 TODO 或按项目现有请求封装补齐，不要臆造固定字段。
+- userInfoApi.responsePool 只包含用户勾选的响应字段；必须按 userInfoResponsePath 从响应中读取用户信息并写入 app.public.userInfo，不要写死 res.data.user、data.user 或 userInfo。
+- 参考 lawyer-huasheng/weapp/pages/login/login.js 的 getUserInfo 思路：请求成功时写 app.public.userInfo，然后 wx.hideLoading 并 linkTo；请求失败时说明登录已成功但拉取用户信息失败，也要 wx.hideLoading 并 linkTo。
+- getUserInfo 阶段继续使用微信原生 wx.showLoading / wx.hideLoading，不要实现 finishAuthLoading、showAppLoading、hideAppLoading 这类自定义 loading。
 字段池配置：
 
 \`\`\`json
@@ -490,6 +570,9 @@ function parseAuthApiDocument(role: 'login' | 'register' | 'combined') {
     if (role === 'login') {
       applyDefaultSeparateMappings(responsePool)
     }
+    if (role === 'combined') {
+      applyDefaultCombinedMappings(responsePool)
+    }
     generatedPrompt.value = ''
   }
   catch (error) {
@@ -503,6 +586,9 @@ function invalidateAuthApi(role: 'login' | 'register' | 'combined') {
   if (index >= 0) authApiInterfaces.splice(index, 1)
   if (role === 'login') {
     resetSeparateMappings()
+  }
+  if (role === 'combined') {
+    resetCombinedMappings()
   }
   authApiStatuses[role] = '等待重新解析'
   generatedPrompt.value = ''
@@ -543,6 +629,88 @@ function addManualAuthResponseParam(api: AuthApiInterface) {
   generatedPrompt.value = ''
 }
 
+function parseUserInfoApiDocument() {
+  const source = userInfoApiDocument.value.trim()
+  if (!source) {
+    ElMessage.warning('请先粘贴 getUserInfo 接口 OpenAPI/Swagger')
+    return
+  }
+
+  try {
+    const result = parseOpenApiDocument(source)
+    userInfoApi.method = result.method
+    userInfoApi.path = result.path
+    userInfoApi.summary = result.summary
+    userInfoApi.requestPool.splice(0, userInfoApi.requestPool.length, ...result.requestParams.map(param => {
+      const sourceKey = findDefaultAuthSource(param.name)
+      const tokenHint = isTokenLikeRequestParam(param.name)
+      return {
+        ...param,
+        enabled: param.required || Boolean(sourceKey) || tokenHint,
+        sourceMode: sourceKey ? 'pool' as const : 'custom' as const,
+        sourceKey,
+        customSource: tokenHint ? '从目标项目登录成功后的 app.public.token 或请求封装中的授权头读取' : '',
+      }
+    }))
+    const responsePool = result.responseParams.map(param => ({
+      ...param,
+      selected: isDefaultUserInfoResponseParam(param.name),
+    }))
+    userInfoApi.responsePool.splice(0, userInfoApi.responsePool.length, ...responsePool)
+    userInfoResponsePath.value = findResponsePathByNames(responsePool, ['user', 'userInfo', 'data']) || ''
+    userInfoApiStatus.value = `已解析 ${result.method} ${result.path}，请确认请求参数和用户信息响应字段`
+    generatedPrompt.value = ''
+    ElMessage.success('getUserInfo 接口解析完成')
+  }
+  catch (error) {
+    userInfoApiStatus.value = `解析失败：${error instanceof Error ? error.message : '无法识别文档'}`
+    ElMessage.error(userInfoApiStatus.value)
+  }
+}
+
+function invalidateUserInfoApi() {
+  if (userInfoApi.path !== '-') {
+    resetUserInfoApiParse()
+  }
+}
+
+function addManualUserInfoRequestParam() {
+  const index = userInfoApi.requestPool.filter(param => param.manual).length + 1
+  userInfoApi.requestPool.push({
+    id: `user-info-manual-request-${Date.now()}`,
+    name: `manualParam${index}`,
+    path: `manualParam${index}`,
+    type: 'string',
+    required: false,
+    description: '手动补充的 getUserInfo 请求参数，请修改参数名、类型和取值来源',
+    source: '手动添加',
+    manual: true,
+    enabled: true,
+    sourceMode: 'custom',
+    sourceKey: '',
+    customSource: '',
+  })
+  generatedPrompt.value = ''
+}
+
+function addManualUserInfoResponseParam() {
+  const index = userInfoApi.responsePool.filter(param => param.manual).length + 1
+  const path = `data.user.manualField${index}`
+  userInfoApi.responsePool.push({
+    id: `user-info-manual-response-${Date.now()}`,
+    name: `manualField${index}`,
+    path,
+    type: 'string',
+    required: false,
+    description: '手动补充的 getUserInfo 响应参数，请修改响应路径、字段名和说明',
+    source: '手动添加',
+    manual: true,
+    selected: true,
+  })
+  if (!userInfoResponsePath.value) userInfoResponsePath.value = path
+  generatedPrompt.value = ''
+}
+
 function findDefaultAuthSource(name: string) {
   const exact = parameterPool.find(param => param.name.toLowerCase() === name.toLowerCase())
   if (exact) return `auto:${exact.name}`
@@ -557,6 +725,14 @@ function completeAuthApiStep() {
     return
   }
   advanceStep(5)
+}
+
+function completeUserInfoApiStep() {
+  if (!userInfoApiReady.value) {
+    ElMessage.warning('请先解析 getUserInfo 接口，并选择写入 app.public.userInfo 的响应字段')
+    return
+  }
+  advanceStep(7)
 }
 
 function advanceStep(completedStep: number) {
@@ -599,6 +775,9 @@ function resetForm() {
   authApiStatuses.combined = '等待解析'
   authApiInterfaces.splice(0, authApiInterfaces.length)
   resetSeparateMappings()
+  resetCombinedMappings()
+  userInfoApiDocument.value = ''
+  resetUserInfoApiParse()
   currentStep.value = 1
   activeStep.value = 1
 }
@@ -611,6 +790,17 @@ function resetPhoneApiParse() {
   parsedPhoneApi.summary = '未解析'
   phoneApiRequestPool.splice(0, phoneApiRequestPool.length)
   phoneApiResponsePool.splice(0, phoneApiResponsePool.length)
+  generatedPrompt.value = ''
+}
+
+function resetUserInfoApiParse() {
+  userInfoApiStatus.value = '等待解析'
+  userInfoApi.method = '-'
+  userInfoApi.path = '-'
+  userInfoApi.summary = '未解析'
+  userInfoApi.requestPool.splice(0, userInfoApi.requestPool.length)
+  userInfoApi.responsePool.splice(0, userInfoApi.responsePool.length)
+  userInfoResponsePath.value = ''
   generatedPrompt.value = ''
 }
 
@@ -782,7 +972,15 @@ function isPhoneLikeResponseParam(name: string) {
 }
 
 function isDefaultAuthResponseParam(name: string) {
-  return /^(data|loginData|access_token|token|bindFlag|bingFlag|openid|openId)$/i.test(name)
+  return /^(data|loginData|access_token|token|bindFlag|bingFlag|openid|openId|needEditInfo)$/i.test(name)
+}
+
+function isTokenLikeRequestParam(name: string) {
+  return /^(authorization|token|accessToken|access_token|satoken)$/i.test(name)
+}
+
+function isDefaultUserInfoResponseParam(name: string) {
+  return /^(data|user|userInfo|profile|member|account)$/i.test(name)
 }
 
 function applyDefaultSeparateMappings(params: AuthApiResponseParameter[]) {
@@ -791,6 +989,13 @@ function applyDefaultSeparateMappings(params: AuthApiResponseParameter[]) {
   separatePublicMappings.token = findResponsePathByNames(params, ['access_token', 'token']) || ''
   separatePublicMappings.bindFlag = separateBindFlagResponsePath.value
   separatePublicMappings.openId = findResponsePathByNames(params, ['openid', 'openId']) || ''
+}
+
+function applyDefaultCombinedMappings(params: AuthApiResponseParameter[]) {
+  combinedPublicMappings.loginData = findResponsePathByNames(params, ['data', 'loginData']) || ''
+  combinedPublicMappings.token = findResponsePathByNames(params, ['access_token', 'token']) || ''
+  combinedPublicMappings.bindFlag = findResponsePathByNames(params, ['bindFlag', 'bingFlag']) || ''
+  combinedPublicMappings.needEditInfo = findResponsePathByNames(params, ['needEditInfo']) || ''
 }
 
 function findResponsePathByNames(params: AuthApiResponseParameter[], names: string[]) {
@@ -803,6 +1008,13 @@ function resetSeparateMappings() {
   separatePublicMappings.token = ''
   separatePublicMappings.bindFlag = ''
   separatePublicMappings.openId = ''
+}
+
+function resetCombinedMappings() {
+  combinedPublicMappings.loginData = ''
+  combinedPublicMappings.token = ''
+  combinedPublicMappings.bindFlag = ''
+  combinedPublicMappings.needEditInfo = ''
 }
 
 function markPhoneApiPoolsDirty() {
@@ -1239,6 +1451,7 @@ async function copyPrompt() {
       >
         <template #title>
           共用接口使用固定流程：phoneCode + codeXcx 调用同一个登录接口，成功后保存登录态、拉用户信息并跳转；不纳入头像昵称底部弹窗。
+          下方映射可以留空或不完整；若留空，生成提示词会要求目标项目根据接口实际返回补齐。
         </template>
       </el-alert>
 
@@ -1431,6 +1644,40 @@ async function copyPrompt() {
         </el-table>
       </div>
 
+      <div v-if="authMode === 'combined' && combinedApiInterface" class="mapping-panel">
+        <div class="section-title">
+          <span>Combined Response Mapping</span>
+          <strong>共用接口返回值映射</strong>
+        </div>
+        <el-alert
+          title="下拉项来自登录注册共用接口解析出的响应字段，可以先留空。后续流程里的 token、绑定状态、needEditInfo 等都按这里的响应路径取值，不固定字段名。"
+          type="warning"
+          :closable="false"
+          show-icon
+        />
+        <el-table :data="combinedPublicMappingItems" border>
+          <el-table-column prop="target" label="写入位置" min-width="180" />
+          <el-table-column prop="label" label="业务含义" min-width="140" />
+          <el-table-column label="共用接口响应字段" min-width="280">
+            <template #default="{ row }">
+              <el-select
+                v-model="combinedPublicMappings[row.key]"
+                filterable
+                placeholder="请选择响应字段"
+                @change="generatedPrompt = ''"
+              >
+                <el-option
+                  v-for="option in combinedResponseOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
       <div class="step-actions">
         <el-button type="primary" :disabled="!authApiReady" @click="completeAuthApiStep">
           确认接口解析并进入下一步
@@ -1440,6 +1687,193 @@ async function copyPrompt() {
 
     <el-card
       v-if="activeStep === 6"
+      class="parameter-section"
+      :class="{ 'review-mode': isReviewingPrevious }"
+      :inert="isReviewingPrevious || undefined"
+      shadow="never"
+    >
+      <template #header>
+        <div class="panel-title">
+          <span>Get UserInfo API</span>
+          <strong>解析 getUserInfo 接口</strong>
+        </div>
+      </template>
+
+      <el-alert
+        title="参考 login.js：登录成功后调用 getUserInfo，成功时写入 app.public.userInfo，失败时也认为登录已成功并继续 wx.hideLoading + linkTo；这里不使用 finishAuthLoading。"
+        type="info"
+        :closable="false"
+        show-icon
+      />
+
+      <div class="parser-layout user-info-layout">
+        <div class="yaml-panel">
+          <label class="textarea-label" for="user-info-api-document">OpenAPI/Swagger</label>
+          <el-input
+            id="user-info-api-document"
+            v-model="userInfoApiDocument"
+            type="textarea"
+            :rows="12"
+            resize="vertical"
+            placeholder="粘贴 getUserInfo 接口的 YAML 或 JSON 文档，例如 /system/user/profile"
+            @input="invalidateUserInfoApi"
+          />
+          <div class="parser-actions">
+            <el-button type="primary" :disabled="!userInfoApiDocument.trim()" @click="parseUserInfoApiDocument">
+              解析 getUserInfo 接口
+            </el-button>
+            <el-tag type="info">
+              {{ userInfoApiStatus }}
+            </el-tag>
+          </div>
+        </div>
+
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="接口路径">
+            {{ userInfoApi.method }} {{ userInfoApi.path }}
+          </el-descriptions-item>
+          <el-descriptions-item label="接口名称">
+            {{ userInfoApi.summary }}
+          </el-descriptions-item>
+          <el-descriptions-item label="请求参数">
+            {{ userInfoApi.requestPool.length }} 个，业务传参 {{ selectedUserInfoRequestPool.length }} 个
+          </el-descriptions-item>
+          <el-descriptions-item label="响应参数">
+            {{ userInfoApi.responsePool.length }} 个，入池字段 {{ selectedUserInfoResponsePool.length }} 个
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+
+      <template v-if="userInfoApi.path !== '-'">
+        <div class="section-title">
+          <span>Request Pool</span>
+          <strong>getUserInfo 请求参数，可从字段池取值或用 input 说明来源</strong>
+        </div>
+        <el-table :data="userInfoApi.requestPool" border>
+          <el-table-column label="需要填" width="92" align="center">
+            <template #default="{ row }">
+              <el-checkbox v-model="row.enabled" />
+            </template>
+          </el-table-column>
+          <el-table-column label="来源" width="88">
+            <template #default="{ row }">
+              <el-tag :type="row.manual ? 'warning' : 'info'">{{ row.manual ? '手动' : '解析' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="参数名" min-width="150">
+            <template #default="{ row }">
+              <el-input v-model="row.name" placeholder="参数名" />
+            </template>
+          </el-table-column>
+          <el-table-column label="路径" min-width="150">
+            <template #default="{ row }">
+              <el-input v-model="row.path" placeholder="body.xxx / query.xxx / header.xxx" />
+            </template>
+          </el-table-column>
+          <el-table-column label="类型" width="130">
+            <template #default="{ row }">
+              <el-input v-model="row.type" placeholder="string" />
+            </template>
+          </el-table-column>
+          <el-table-column label="必填" width="80">
+            <template #default="{ row }">
+              <el-switch v-model="row.required" />
+            </template>
+          </el-table-column>
+          <el-table-column label="说明" min-width="220">
+            <template #default="{ row }">
+              <el-input v-model="row.description" placeholder="参数说明" />
+            </template>
+          </el-table-column>
+          <el-table-column label="取值方式" width="160">
+            <template #default="{ row }">
+              <el-select v-model="row.sourceMode" :disabled="!row.enabled">
+                <el-option label="从字段池选择" value="pool" />
+                <el-option label="Input 说明来源" value="custom" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="取值" min-width="300">
+            <template #default="{ row }">
+              <el-select v-if="row.sourceMode === 'pool'" v-model="row.sourceKey" filterable clearable :disabled="!row.enabled" placeholder="请选择字段池参数">
+                <el-option v-for="option in mergedFieldPoolOptions" :key="option.key" :label="option.label" :value="option.key" />
+              </el-select>
+              <el-input v-else v-model="row.customSource" :disabled="!row.enabled" placeholder="例如：从 app.public.token 或项目请求封装中获取授权信息" />
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="parser-actions">
+          <el-button @click="addManualUserInfoRequestParam">手动添加请求参数</el-button>
+        </div>
+
+        <div class="section-title">
+          <span>Response Pool</span>
+          <strong>选择 getUserInfo 有用响应字段，并指定 app.public.userInfo 的来源</strong>
+        </div>
+        <el-table :data="userInfoApi.responsePool" border>
+          <el-table-column label="入池" width="80" align="center">
+            <template #default="{ row }">
+              <el-checkbox v-model="row.selected" />
+            </template>
+          </el-table-column>
+          <el-table-column label="来源" width="88">
+            <template #default="{ row }">
+              <el-tag :type="row.manual ? 'warning' : 'info'">{{ row.manual ? '手动' : '解析' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="响应路径" min-width="220">
+            <template #default="{ row }">
+              <el-input v-model="row.path" placeholder="例如：data.user" />
+            </template>
+          </el-table-column>
+          <el-table-column label="字段名" min-width="150">
+            <template #default="{ row }">
+              <el-input v-model="row.name" placeholder="字段名" />
+            </template>
+          </el-table-column>
+          <el-table-column label="类型" width="130">
+            <template #default="{ row }">
+              <el-input v-model="row.type" placeholder="object" />
+            </template>
+          </el-table-column>
+          <el-table-column label="说明" min-width="240">
+            <template #default="{ row }">
+              <el-input v-model="row.description" placeholder="字段说明" />
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="parser-actions">
+          <el-button @click="addManualUserInfoResponseParam">手动添加响应参数</el-button>
+        </div>
+
+        <el-form class="mapping-form user-info-mapping" label-position="top">
+          <el-form-item label="写入 app.public.userInfo 的响应字段">
+            <el-select
+              v-model="userInfoResponsePath"
+              filterable
+              placeholder="请选择 getUserInfo 响应中的用户信息字段"
+              @change="generatedPrompt = ''"
+            >
+              <el-option
+                v-for="option in userInfoResponseOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </el-select>
+          </el-form-item>
+        </el-form>
+      </template>
+
+      <div class="step-actions">
+        <el-button type="primary" :disabled="!userInfoApiReady" @click="completeUserInfoApiStep">
+          确认 getUserInfo 配置并进入下一步
+        </el-button>
+      </div>
+    </el-card>
+
+    <el-card
+      v-if="activeStep === 7"
       class="parameter-section"
       :class="{ 'review-mode': isReviewingPrevious }"
       :inert="isReviewingPrevious || undefined"
@@ -1470,7 +1904,7 @@ async function copyPrompt() {
       </div>
     </el-card>
 
-    <section v-if="activeStep === 1 || activeStep === 7" class="workspace single-step">
+    <section v-if="activeStep === 1 || activeStep === 8" class="workspace single-step">
       <el-card
         v-if="activeStep === 1"
         class="input-panel"
@@ -1539,7 +1973,7 @@ async function copyPrompt() {
         </div>
       </el-card>
 
-      <el-card v-if="activeStep === 7" class="output-panel" shadow="never">
+      <el-card v-if="activeStep === 8" class="output-panel" shadow="never">
         <template #header>
           <div class="panel-title output-title">
             <div>
@@ -1616,7 +2050,7 @@ h1 {
 
 .step-strip {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
@@ -1730,7 +2164,8 @@ h1 {
 }
 
 .mapping-form :deep(.el-select),
-.mapping-panel :deep(.el-select) {
+.mapping-panel :deep(.el-select),
+.user-info-mapping :deep(.el-select) {
   width: 100%;
 }
 
